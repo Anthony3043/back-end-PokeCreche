@@ -1,9 +1,11 @@
 require('dotenv').config();
 
 const express = require('express');
-const path = require('path');
+const mysql = require('mysql2/promise');
+const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
 const app = express();
 
@@ -12,163 +14,162 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.json());
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pokecreche_secret';
 
-// ===== BANCO DE DADOS - SQLite (Funciona no Railway) =====
-let db;
+// ===== CONFIGURAÇÃO DO BANCO =====
+function getDbConfig() {
+  // Railway fornece DATABASE_URL automaticamente
+  if (process.env.DATABASE_URL) {
+    console.log('✅ Usando DATABASE_URL do Railway');
+    const url = new URL(process.env.DATABASE_URL);
+    return {
+      host: url.hostname,
+      user: url.username,
+      password: url.password,
+      database: url.pathname.substring(1),
+      port: url.port || 3306,
+      waitForConnections: true,
+      connectionLimit: 10,
+      timezone: '+00:00'
+    };
+  }
 
-try {
-  // No Railway, usa SQLite no diretório /tmp (que é persistente)
-  const Database = require('better-sqlite3');
-  const dbPath = process.env.NODE_ENV === 'production' 
-    ? '/tmp/pokecreche.db'  // Railway tem /tmp writable
-    : './pokecreche.db';    // Desenvolvimento local
-  
-  db = new Database(dbPath);
-  console.log('✅ SQLite conectado em:', dbPath);
-  
-} catch (error) {
-  console.error('❌ Erro ao conectar SQLite:', error);
-  // Fallback para memória
-  const Database = require('better-sqlite3');
-  db = new Database(':memory:');
-  console.log('✅ SQLite em memória como fallback');
+  // Desenvolvimento local
+  console.log('⚠️  Usando configuração local');
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'q1w2e3',
+    database: process.env.DB_NAME || 'pokecreche',
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    timezone: '+00:00'
+  };
 }
 
-// Criar tabelas no SQLite
-function ensureTables() {
+let pool = null;
+
+function getPool() {
+  if (!pool) {
+    const dbConfig = getDbConfig();
+    pool = mysql.createPool(dbConfig);
+  }
+  return pool;
+}
+
+// Criar tabelas se não existirem
+async function ensureTables() {
+  console.log('🔧 Verificando tabelas...');
+  
+  const createAlunos = `
+    CREATE TABLE IF NOT EXISTS alunos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      cpf VARCHAR(20) NOT NULL UNIQUE,
+      matricula VARCHAR(50) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
+
+  const createDocentes = `
+    CREATE TABLE IF NOT EXISTS docentes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      identificador VARCHAR(100) NOT NULL UNIQUE,
+      senha VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
+
+  const poolInstance = getPool();
+  const conn = await poolInstance.getConnection();
+  
   try {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS alunos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        cpf TEXT NOT NULL UNIQUE,
-        matricula TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS docentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        identificador TEXT NOT NULL UNIQUE,
-        senha TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    console.log('✅ Tabelas SQLite criadas/verificadas');
-    
-    // Contar registros existentes
-    const alunoCount = db.prepare('SELECT COUNT(*) as count FROM alunos').get();
-    const docenteCount = db.prepare('SELECT COUNT(*) as count FROM docentes').get();
-    
-    console.log(`📊 Alunos: ${alunoCount.count} | Docentes: ${docenteCount.count}`);
-    
+    await conn.query(createAlunos);
+    await conn.query(createDocentes);
+    console.log('✅ Tabelas verificadas/criadas');
   } catch (error) {
-    console.error('❌ Erro ao criar tabelas SQLite:', error);
+    console.error('❌ Erro nas tabelas:', error.message);
+  } finally {
+    conn.release();
   }
 }
 
-// ===== FUNÇÕES DE BANCO SQLite =====
-function query(sql, params = []) {
+// ===== ROTAS PRINCIPAIS =====
+
+// Página inicial
+app.get('/', async (req, res) => {
   try {
-    if (sql.trim().toUpperCase().startsWith('SELECT')) {
-      const stmt = db.prepare(sql);
-      if (params.length > 0) {
-        return [stmt.all(...params)];
-      } else {
-        return [stmt.all()];
-      }
-    } else {
-      const stmt = db.prepare(sql);
-      const result = stmt.run(...params);
-      return [{ insertId: result.lastInsertRowid, affectedRows: result.changes }];
-    }
+    await ensureTables();
+    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
+    
+    res.render('pages/alunos', {
+      title: 'Cadastro do Aluno - PokeCreche',
+      currentPage: 'alunos',
+      baseUrl: baseUrl
+    });
   } catch (error) {
-    throw error;
+    res.status(500).send('Erro ao carregar página');
   }
-}
-
-// ===== ROTAS =====
-app.get('/', (req, res) => {
-  console.log('🌐 Acesso à página inicial');
-  ensureTables();
-  
-  const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-  console.log('📍 Base URL:', baseUrl);
-
-  res.render('pages/alunos', {
-    title: 'Cadastro do Aluno - PokeCreche',
-    currentPage: 'alunos',
-    baseUrl: baseUrl
-  });
 });
 
-app.get('/alunos', (req, res) => {
-  console.log('📝 Acesso à página de alunos');
-  ensureTables();
-  
-  const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-
-  res.render('pages/alunos', {
-    title: 'Cadastro do Aluno - PokeCreche',
-    currentPage: 'alunos',
-    baseUrl: baseUrl
-  });
+app.get('/alunos', async (req, res) => {
+  try {
+    await ensureTables();
+    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
+    
+    res.render('pages/alunos', {
+      title: 'Cadastro do Aluno - PokeCreche',
+      currentPage: 'alunos',
+      baseUrl: baseUrl
+    });
+  } catch (error) {
+    res.status(500).send('Erro ao carregar página');
+  }
 });
 
-app.get('/docentes', (req, res) => {
-  console.log('👨‍🏫 Acesso à página de docentes');
-  ensureTables();
-  
-  const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-
-  res.render('pages/docentes', {
-    title: 'Cadastro do Docente - PokeCreche',
-    currentPage: 'docentes',
-    baseUrl: baseUrl
-  });
+app.get('/docentes', async (req, res) => {
+  try {
+    await ensureTables();
+    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
+    
+    res.render('pages/docentes', {
+      title: 'Cadastro do Docente - PokeCreche',
+      currentPage: 'docentes',
+      baseUrl: baseUrl
+    });
+  } catch (error) {
+    res.status(500).send('Erro ao carregar página');
+  }
 });
 
 // Health Check
-app.get('/api/health', (req, res) => {
-  console.log('❤️  Health check solicitado');
+app.get('/api/health', async (req, res) => {
   try {
-    ensureTables();
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    await conn.query('SELECT 1');
+    conn.release();
     
-    const alunoCount = db.prepare('SELECT COUNT(*) as count FROM alunos').get();
-    const docenteCount = db.prepare('SELECT COUNT(*) as count FROM docentes').get();
-    
-    const response = { 
+    res.json({ 
       status: 'healthy', 
-      timestamp: new Date().toISOString(),
+      message: '🚀 PokeCreche Online!',
       environment: process.env.NODE_ENV || 'development',
-      database: 'sqlite',
-      alunos: alunoCount.count,
-      docentes: docenteCount.count,
       platform: 'railway'
-    };
-    
-    console.log('✅ Health check:', response);
-    res.json(response);
-    
+    });
   } catch (error) {
-    console.error('❌ Health check falhou:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      error: error.message 
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      error: 'Banco de dados não conectado',
+      message: 'Adicione um banco MySQL no Railway'
     });
   }
 });
 
 // Cadastro de Aluno
-app.post('/register/aluno', (req, res) => {
-  console.log('📥 Cadastro de aluno:', req.body);
-  
+app.post('/register/aluno', async (req, res) => {
   const { nome, cpf, matricula } = req.body || {};
   
   if (!nome || !cpf || !matricula) {
@@ -176,36 +177,37 @@ app.post('/register/aluno', (req, res) => {
   }
 
   try {
-    ensureTables();
-    
     const cpfClean = cpf.replace(/\D+/g, '');
     const matriculaStr = String(matricula).trim();
 
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    
     // Verificar se já existe
-    const existing = db.prepare('SELECT id FROM alunos WHERE matricula = ? OR cpf = ?').get(matriculaStr, cpfClean);
-    if (existing) {
+    const [existing] = await conn.query('SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1', [matriculaStr, cpfClean]);
+    
+    if (existing.length > 0) {
+      conn.release();
       return res.status(409).json({ message: 'Aluno já cadastrado' });
     }
 
     // Inserir novo aluno
-    const result = db.prepare('INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)').run(nome, cpfClean, matriculaStr);
+    const [result] = await conn.query('INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)', [nome, cpfClean, matriculaStr]);
+    conn.release();
     
-    console.log('✅ Aluno cadastrado com ID:', result.lastInsertRowid);
     return res.status(201).json({ 
-      message: 'Aluno cadastrado com sucesso!', 
-      id: result.lastInsertRowid 
+      message: '🎉 Aluno cadastrado com sucesso!', 
+      id: result.insertId 
     });
     
   } catch (error) {
-    console.error('❌ Erro ao cadastrar aluno:', error);
-    return res.status(500).json({ message: 'Erro ao cadastrar aluno', error: error.message });
+    console.error('Erro:', error);
+    return res.status(500).json({ message: 'Erro ao cadastrar aluno. Verifique se o banco está configurado.' });
   }
 });
 
 // Cadastro de Docente
 app.post('/register/docente', async (req, res) => {
-  console.log('📥 Cadastro de docente:', req.body);
-  
   const { nome, identificador, senha } = req.body || {};
   
   if (!nome || !identificador || !senha) {
@@ -213,99 +215,43 @@ app.post('/register/docente', async (req, res) => {
   }
 
   try {
-    ensureTables();
+    const hashed = await bcrypt.hash(senha, 10);
 
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    
     // Verificar se já existe
-    const existing = db.prepare('SELECT id FROM docentes WHERE identificador = ?').get(identificador);
-    if (existing) {
+    const [existing] = await conn.query('SELECT id FROM docentes WHERE identificador = ? LIMIT 1', [identificador]);
+    
+    if (existing.length > 0) {
+      conn.release();
       return res.status(409).json({ message: 'Docente já cadastrado' });
     }
 
-    // Criptografar senha
-    const hashedPassword = await bcrypt.hash(senha, 10);
-
     // Inserir novo docente
-    const result = db.prepare('INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)').run(nome, identificador, hashedPassword);
+    const [result] = await conn.query('INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)', [nome, identificador, hashed]);
+    conn.release();
     
-    console.log('✅ Docente cadastrado com ID:', result.lastInsertRowid);
     return res.status(201).json({ 
-      message: 'Docente cadastrado com sucesso!', 
-      id: result.lastInsertRowid 
+      message: '🎉 Docente cadastrado com sucesso!', 
+      id: result.insertId 
     });
     
   } catch (error) {
-    console.error('❌ Erro ao cadastrar docente:', error);
-    return res.status(500).json({ message: 'Erro ao cadastrar docente', error: error.message });
+    console.error('Erro:', error);
+    return res.status(500).json({ message: 'Erro ao cadastrar docente. Verifique se o banco está configurado.' });
   }
 });
 
-// Login Aluno
-app.post('/login/aluno', (req, res) => {
-  console.log('🔐 Login aluno:', req.body);
-  
-  const { matricula, cpf } = req.body || {};
-  
-  if (!matricula || !cpf) {
-    return res.status(400).json({ success: false, message: 'Matrícula e CPF são obrigatórios' });
-  }
-
-  try {
-    ensureTables();
-    
-    const cpfClean = cpf.replace(/\D+/g, '');
-    const aluno = db.prepare('SELECT * FROM alunos WHERE matricula = ? AND cpf = ?').get(matricula, cpfClean);
-    
-    if (aluno) {
-      const token = jwt.sign({ 
-        id: aluno.id, 
-        type: 'aluno', 
-        matricula: aluno.matricula 
-      }, JWT_SECRET, { expiresIn: '8h' });
-      
-      return res.json({
-        success: true,
-        message: 'Login realizado',
-        token,
-        user: {
-          id: aluno.id,
-          nome: aluno.nome,
-          matricula: aluno.matricula
-        }
-      });
-    }
-    
-    return res.status(401).json({ success: false, message: 'Matrícula ou CPF inválidos' });
-  } catch (error) {
-    console.error('❌ Erro no login:', error);
-    return res.status(500).json({ success: false, message: 'Erro ao fazer login' });
-  }
-});
-
-// Debug - Ver todos os dados
-app.get('/api/debug', (req, res) => {
-  try {
-    ensureTables();
-    
-    const alunos = db.prepare('SELECT * FROM alunos').all();
-    const docentes = db.prepare('SELECT id, nome, identificador FROM docentes').all();
-    
-    const debugInfo = {
-      environment: process.env.NODE_ENV,
-      railway_url: process.env.RAILWAY_STATIC_URL,
-      database: 'sqlite',
-      total_alunos: alunos.length,
-      total_docentes: docentes.length,
-      alunos: alunos,
-      docentes: docentes
-    };
-    
-    console.log('🐛 Debug info:', debugInfo);
-    res.json(debugInfo);
-    
-  } catch (error) {
-    console.error('❌ Erro no debug:', error);
-    res.status(500).json({ error: error.message });
-  }
+// Rota para verificar configuração
+app.get('/api/config', (req, res) => {
+  const config = {
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    environment: process.env.NODE_ENV,
+    railwayUrl: process.env.RAILWAY_STATIC_URL,
+    port: process.env.PORT
+  };
+  res.json(config);
 });
 
 // ===== INICIALIZAÇÃO =====
@@ -316,10 +262,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📍 Porta: ${PORT}`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🚇 Platform: Railway`);
-  console.log(`💾 Banco: SQLite`);
-  
-  ensureTables();
-  console.log('✅ Aplicação inicializada com sucesso!');
+  console.log(`💡 Dica: Adicione um banco MySQL no Railway para funcionar completamente`);
 });
 
 module.exports = app;
