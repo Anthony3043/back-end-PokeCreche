@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "vercel-build": "npm install"
+    "railway": "node server.js"
   },
   "keywords": ["pokecreche", "cadastro", "alunos", "docentes"],
   "author": "Seu Nome",
