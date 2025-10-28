@@ -8,19 +8,19 @@
   ],
   "routes": [
     {
-      "src": "/alunos.html",
-      "dest": "/alunos.html"
+      "src": "/api/(.*)",
+      "dest": "/server.js"
     },
     {
-      "src": "/docentes.html",
-      "dest": "/docentes.html"
+      "src": "/register/(.*)",
+      "dest": "/server.js"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
+      "src": "/(.*\\.html)",
+      "dest": "/server.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/",
       "dest": "/server.js"
     }
   ]
