@@ -37,7 +37,9 @@
   </main>
 
   <script>
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000' 
+    : 'https://seu-projeto.vercel.app';
     const formDocente = document.getElementById('form-docente');
     const btnDoc = formDocente.querySelector('.btn-submit');
 

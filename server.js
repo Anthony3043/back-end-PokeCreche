@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -24,7 +23,6 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   timezone: '+00:00'
 });
-
 
 // Função para criar tabelas se não existirem
 async function ensureTables() {
@@ -85,7 +83,15 @@ function onlyDigits(str = '') {
   return (str || '').toString().replace(/\D+/g, '');
 }
 
-// Rotas
+// Rotas para servir arquivos HTML
+app.get('/alunos.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'alunos.html'));
+});
+
+app.get('/docentes.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'docentes.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'alunos.html'));
 });
@@ -214,7 +220,15 @@ app.post('/api/events', authenticateJWT, async (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
-// Inicialização do banco de dados sem listen
+// Para desenvolvimento local
+const PORT = process.env.PORT || 3000;
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
+
+// Inicialização do banco de dados
 (async () => {
   try {
     const conn = await pool.getConnection();
