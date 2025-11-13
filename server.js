@@ -196,6 +196,50 @@ app.post('/login/docente', async (req, res) => {
   });
 });
 
+// Rota para buscar todos os alunos
+app.get('/alunos', (req, res) => {
+  db.query('SELECT id, nome, matricula, cpf FROM alunos', (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar alunos' });
+    res.json(result);
+  });
+});
+
+// Rotas de eventos do calendário
+app.get('/eventos', (req, res) => {
+  db.query('SELECT date, title, color FROM calendario_events', (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar eventos' });
+    res.json(result);
+  });
+});
+
+app.post('/eventos', (req, res) => {
+  console.log('Recebido no /eventos:', req.body);
+  const { date, title, color } = req.body;
+  console.log('date:', date, 'title:', title, 'color:', color);
+  if (!date || !title || !color) {
+    return res.status(400).json({ message: 'Campos obrigatórios: date, title, color' });
+  }
+  const sql = 'INSERT INTO calendario_events (teacher_id, date, title, color) VALUES (NULL, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, color = ?';
+  console.log('Executando SQL:', sql);
+  console.log('Parâmetros:', [date, title, color, title, color]);
+  db.query(sql, [date, title, color, title, color], (err, result) => {
+    if (err) {
+      console.error('Erro ao salvar evento:', err);
+      return res.status(500).json({ message: 'Erro ao salvar evento', error: err.message });
+    }
+    console.log('Evento salvo com sucesso:', result);
+    res.json({ message: 'Evento salvo', id: result.insertId });
+  });
+});
+
+app.delete('/eventos/:date', (req, res) => {
+  const { date } = req.params;
+  db.query('DELETE FROM calendario_events WHERE date = ? AND teacher_id IS NULL', [date], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao remover evento' });
+    res.json({ message: 'Evento removido' });
+  });
+});
+
 app.use(express.static(path.join(__dirname)));
 
 const PORT = process.env.PORT || 3000;
