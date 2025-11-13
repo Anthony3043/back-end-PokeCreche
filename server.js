@@ -230,7 +230,10 @@ app.get('/alunos', (req, res) => {
 app.put('/alunos/:id/avatar', (req, res) => {
   const { avatar } = req.body;
   db.query('UPDATE alunos SET avatar = ? WHERE id = ?', [avatar, req.params.id], (err) => {
-    if (err) return res.status(500).json({ message: 'Erro ao atualizar avatar' });
+    if (err) {
+      console.error('Erro ao atualizar avatar do aluno:', err);
+      return res.status(500).json({ message: 'Erro ao atualizar avatar', error: err.message });
+    }
     res.json({ message: 'Avatar atualizado' });
   });
 });
@@ -246,7 +249,10 @@ app.get('/docentes', (req, res) => {
 app.put('/docentes/:id/avatar', (req, res) => {
   const { avatar } = req.body;
   db.query('UPDATE docentes SET avatar = ? WHERE id = ?', [avatar, req.params.id], (err) => {
-    if (err) return res.status(500).json({ message: 'Erro ao atualizar avatar' });
+    if (err) {
+      console.error('Erro ao atualizar avatar do docente:', err);
+      return res.status(500).json({ message: 'Erro ao atualizar avatar', error: err.message });
+    }
     res.json({ message: 'Avatar atualizado' });
   });
 });
@@ -462,12 +468,12 @@ app.get('/termos/:user_type/:user_id', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
-// Endpoint temporário para adicionar colunas avatar
+// Endpoint temporário para modificar colunas avatar para LONGTEXT
 app.get('/setup-avatar-columns', (req, res) => {
-  db.query('ALTER TABLE alunos ADD COLUMN avatar TEXT', (err1) => {
-    db.query('ALTER TABLE docentes ADD COLUMN avatar TEXT', (err2) => {
-      const msg1 = err1 ? (err1.code === 'ER_DUP_FIELDNAME' ? 'Já existe' : err1.message) : 'OK';
-      const msg2 = err2 ? (err2.code === 'ER_DUP_FIELDNAME' ? 'Já existe' : err2.message) : 'OK';
+  db.query('ALTER TABLE alunos MODIFY COLUMN avatar LONGTEXT', (err1) => {
+    db.query('ALTER TABLE docentes MODIFY COLUMN avatar LONGTEXT', (err2) => {
+      const msg1 = err1 ? err1.message : 'OK';
+      const msg2 = err2 ? err2.message : 'OK';
       res.json({ success: true, alunos: msg1, docentes: msg2 });
     });
   });
