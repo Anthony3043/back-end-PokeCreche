@@ -13,10 +13,11 @@ app.use(cors({
 }));
 
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'q1w2e3',
-  database: 'PokeCreche'
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'q1w2e3',
+  database: process.env.MYSQLDATABASE || 'PokeCreche',
+  port: process.env.MYSQLPORT || 3306
 });
 
 db.connect((err) => {
@@ -27,32 +28,7 @@ db.connect((err) => {
   }
 });
 
-const createAlunos = `
-CREATE TABLE IF NOT EXISTS alunos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL,
-  cpf VARCHAR(20) NOT NULL UNIQUE,
-  matricula VARCHAR(50) NOT NULL
-);`;
 
-const createDocentes = `
-CREATE TABLE IF NOT EXISTS docentes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL,
-  identificador VARCHAR(100) NOT NULL UNIQUE,
-  senha VARCHAR(255) NOT NULL
-);`;
-
-db.query(createAlunos, (err) => {
-  if (err) console.error('Erro ao criar/verificar tabela alunos:', err.message);
-  else {
-    console.log('Tabela alunos verificada/criada');
-    db.query(createDocentes, (err2) => {
-      if (err2) console.error('Erro ao criar/verificar tabela docentes:', err2.message);
-      else console.log('Tabela docentes verificada/criada');
-    });
-  }
-});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'alunos.html'));
@@ -196,15 +172,146 @@ app.post('/login/docente', async (req, res) => {
   });
 });
 
-// Rota para buscar todos os alunos
+// Alunos
 app.get('/alunos', (req, res) => {
-  db.query('SELECT id, nome, matricula, cpf FROM alunos', (err, result) => {
+  db.query('SELECT id, nome, matricula, cpf, avatar FROM alunos', (err, result) => {
     if (err) return res.status(500).json({ message: 'Erro ao buscar alunos' });
     res.json(result);
   });
 });
 
-// Rotas de eventos do calendário
+// Docentes
+app.get('/docentes', (req, res) => {
+  db.query('SELECT id, nome, identificador, email FROM docentes', (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar docentes' });
+    res.json(result);
+  });
+});
+
+// Turmas
+app.get('/turmas', (req, res) => {
+  db.query('SELECT * FROM turmas', (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar turmas' });
+    res.json(result);
+  });
+});
+
+app.post('/turmas', (req, res) => {
+  const { nome, ano } = req.body;
+  db.query('INSERT INTO turmas (nome, ano) VALUES (?, ?)', [nome, ano], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao criar turma' });
+    res.json({ id: result.insertId, nome, ano });
+  });
+});
+
+app.delete('/turmas/:id', (req, res) => {
+  db.query('DELETE FROM turmas WHERE id = ?', [req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao excluir turma' });
+    res.json({ message: 'Turma excluída' });
+  });
+});
+
+// Alunos por Turma
+app.get('/turmas/:id/alunos', (req, res) => {
+  const sql = `SELECT a.* FROM alunos a 
+    INNER JOIN turma_alunos ta ON a.id = ta.aluno_id 
+    WHERE ta.turma_id = ?`;
+  db.query(sql, [req.params.id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar alunos da turma' });
+    res.json(result);
+  });
+});
+
+app.post('/turmas/:id/alunos', (req, res) => {
+  const { aluno_id } = req.body;
+  db.query('INSERT INTO turma_alunos (turma_id, aluno_id) VALUES (?, ?)', [req.params.id, aluno_id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao adicionar aluno' });
+    res.json({ message: 'Aluno adicionado' });
+  });
+});
+
+app.delete('/turmas/:turmaId/alunos/:alunoId', (req, res) => {
+  db.query('DELETE FROM turma_alunos WHERE turma_id = ? AND aluno_id = ?', [req.params.turmaId, req.params.alunoId], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao remover aluno' });
+    res.json({ message: 'Aluno removido' });
+  });
+});
+
+// Comunicados
+app.get('/comunicados', (req, res) => {
+  db.query('SELECT * FROM comunicados ORDER BY created_at DESC', (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados' });
+    res.json(result);
+  });
+});
+
+app.post('/comunicados', (req, res) => {
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo } = req.body;
+  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao criar comunicado' });
+    res.json({ id: result.insertId });
+  });
+});
+
+app.put('/comunicados/:id', (req, res) => {
+  const { title, subject, message, destinatarios, cc, bcc, icon } = req.body;
+  const sql = 'UPDATE comunicados SET title = ?, subject = ?, message = ?, destinatarios = ?, cc = ?, bcc = ?, icon = ? WHERE id = ?';
+  db.query(sql, [title, subject, message, destinatarios, cc, bcc, icon, req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao atualizar comunicado' });
+    res.json({ message: 'Comunicado atualizado' });
+  });
+});
+
+app.delete('/comunicados/:id', (req, res) => {
+  db.query('DELETE FROM comunicados WHERE id = ?', [req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao excluir comunicado' });
+    res.json({ message: 'Comunicado excluído' });
+  });
+});
+
+// Rascunhos
+app.get('/rascunhos/:docente_id', (req, res) => {
+  db.query('SELECT * FROM rascunhos WHERE docente_id = ? ORDER BY saved_at DESC', [req.params.docente_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar rascunhos' });
+    res.json(result);
+  });
+});
+
+app.post('/rascunhos', (req, res) => {
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon } = req.body;
+  const sql = 'INSERT INTO rascunhos (docente_id, title, subject, message, destinatarios, cc, bcc, icon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao salvar rascunho' });
+    res.json({ id: result.insertId });
+  });
+});
+
+app.delete('/rascunhos/:id', (req, res) => {
+  db.query('DELETE FROM rascunhos WHERE id = ?', [req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao excluir rascunho' });
+    res.json({ message: 'Rascunho excluído' });
+  });
+});
+
+// Registros de Alunos
+app.get('/registros/:aluno_id', (req, res) => {
+  db.query('SELECT * FROM registros_alunos WHERE aluno_id = ? ORDER BY data DESC', [req.params.aluno_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar registros' });
+    res.json(result);
+  });
+});
+
+app.post('/registros', (req, res) => {
+  const { aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes } = req.body;
+  const sql = 'INSERT INTO registros_alunos (aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE alimentacao = ?, comportamento = ?, presenca = ?, observacoes = ?';
+  db.query(sql, [aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes, alimentacao, comportamento, presenca, observacoes], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao salvar registro' });
+    res.json({ id: result.insertId });
+  });
+});
+
+// Eventos do Calendário
 app.get('/eventos', (req, res) => {
   db.query('SELECT date, title, color FROM calendario_events', (err, result) => {
     if (err) return res.status(500).json({ message: 'Erro ao buscar eventos' });
@@ -213,30 +320,38 @@ app.get('/eventos', (req, res) => {
 });
 
 app.post('/eventos', (req, res) => {
-  console.log('Recebido no /eventos:', req.body);
   const { date, title, color } = req.body;
-  console.log('date:', date, 'title:', title, 'color:', color);
   if (!date || !title || !color) {
     return res.status(400).json({ message: 'Campos obrigatórios: date, title, color' });
   }
   const sql = 'INSERT INTO calendario_events (teacher_id, date, title, color) VALUES (NULL, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, color = ?';
-  console.log('Executando SQL:', sql);
-  console.log('Parâmetros:', [date, title, color, title, color]);
   db.query(sql, [date, title, color, title, color], (err, result) => {
-    if (err) {
-      console.error('Erro ao salvar evento:', err);
-      return res.status(500).json({ message: 'Erro ao salvar evento', error: err.message });
-    }
-    console.log('Evento salvo com sucesso:', result);
+    if (err) return res.status(500).json({ message: 'Erro ao salvar evento', error: err.message });
     res.json({ message: 'Evento salvo', id: result.insertId });
   });
 });
 
 app.delete('/eventos/:date', (req, res) => {
-  const { date } = req.params;
-  db.query('DELETE FROM calendario_events WHERE date = ? AND teacher_id IS NULL', [date], (err) => {
+  db.query('DELETE FROM calendario_events WHERE date = ? AND teacher_id IS NULL', [req.params.date], (err) => {
     if (err) return res.status(500).json({ message: 'Erro ao remover evento' });
     res.json({ message: 'Evento removido' });
+  });
+});
+
+// Termos Aceitos
+app.post('/termos', (req, res) => {
+  const { user_type, user_id, ip_address } = req.body;
+  const sql = 'INSERT INTO termos_aceitos (user_type, user_id, aceito, ip_address) VALUES (?, ?, TRUE, ?) ON DUPLICATE KEY UPDATE aceito = TRUE, data_aceite = CURRENT_TIMESTAMP';
+  db.query(sql, [user_type, user_id, ip_address], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao salvar aceite de termos' });
+    res.json({ message: 'Termos aceitos' });
+  });
+});
+
+app.get('/termos/:user_type/:user_id', (req, res) => {
+  db.query('SELECT aceito FROM termos_aceitos WHERE user_type = ? AND user_id = ?', [req.params.user_type, req.params.user_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao verificar termos' });
+    res.json({ aceito: result.length > 0 && result[0].aceito });
   });
 });
 
