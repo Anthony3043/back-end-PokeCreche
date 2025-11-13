@@ -27,7 +27,6 @@
           <form id="form-aluno" action="#" method="post">
             <input type="text" placeholder="Nome" name="nome" required />
             <input type="text" placeholder="CPF" name="cpf" required />
-            <input type="text" placeholder="Nº Matrícula" name="matricula" required />
 
             <button type="submit" class="btn-submit">Cadastrar</button>
           </form>
@@ -56,8 +55,7 @@
       const form = e.target;
       const data = {
         nome: form.nome.value.trim(),
-        cpf: form.cpf.value.trim(),
-        matricula: form.matricula.value.trim()
+        cpf: form.cpf.value.trim()
       };
 
       setLoading(btnAluno, true);

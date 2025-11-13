@@ -35,21 +35,30 @@ app.get('/', (req, res) => {
 });
 
 app.post('/register/aluno', (req, res) => {
-  const { nome, cpf, matricula } = req.body || {};
-  if (!nome || !cpf || !matricula) {
-    return res.status(400).json({ message: 'Campos nome, cpf e matricula são obrigatórios' });
+  const { nome, cpf } = req.body || {};
+  if (!nome || !cpf) {
+    return res.status(400).json({ message: 'Campos nome e cpf são obrigatórios' });
   }
 
-  const sql = 'INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)';
-  db.query(sql, [nome, cpf, matricula], (err, result) => {
+  // Gerar matrícula automaticamente
+  db.query('SELECT COUNT(*) as total FROM alunos', (err, countResult) => {
     if (err) {
-      console.error('Erro ao inserir aluno:', err);
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ message: 'Aluno já cadastrado', error: err.message });
-      }
-      return res.status(500).json({ message: 'Erro ao cadastrar aluno', error: err.message });
+      return res.status(500).json({ message: 'Erro ao gerar matrícula', error: err.message });
     }
-    return res.status(201).json({ message: 'Aluno cadastrado', id: result.insertId });
+
+    const matricula = String(countResult[0].total + 1).padStart(6, '0');
+
+    const sql = 'INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)';
+    db.query(sql, [nome, cpf, matricula], (err, result) => {
+      if (err) {
+        console.error('Erro ao inserir aluno:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(409).json({ message: 'Aluno já cadastrado', error: err.message });
+        }
+        return res.status(500).json({ message: 'Erro ao cadastrar aluno', error: err.message });
+      }
+      return res.status(201).json({ message: 'Aluno cadastrado', id: result.insertId, matricula });
+    });
   });
 });
 
