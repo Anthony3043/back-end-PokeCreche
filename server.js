@@ -16,8 +16,6 @@ app.use(cors({
   credentials: true
 }));
 
-app.options('*', cors());
-
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
