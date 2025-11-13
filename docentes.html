@@ -26,7 +26,6 @@
         <div class="balao-interno">
           <form id="form-docente" action="#" method="post">
             <input type="text" placeholder="Nome" name="nome" required />
-            <input type="text" placeholder="Identificador" name="identificador" required />
             <input type="password" placeholder="Senha" name="senha" required />
 
             <button type="submit" class="btn-submit">Cadastrar</button>
@@ -56,7 +55,6 @@
       const form = e.target;
       const data = {
         nome: form.nome.value.trim(),
-        identificador: form.identificador.value.trim(),
         senha: form.senha.value
       };
 

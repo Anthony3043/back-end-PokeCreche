@@ -88,23 +88,32 @@ app.post('/register/aluno', (req, res) => {
 });
 
 app.post('/register/docente', async (req, res) => {
-  const { nome, identificador, senha } = req.body || {};
-  if (!nome || !identificador || !senha) {
-    return res.status(400).json({ message: 'Campos nome, identificador e senha são obrigatórios' });
+  const { nome, senha } = req.body || {};
+  if (!nome || !senha) {
+    return res.status(400).json({ message: 'Campos nome e senha são obrigatórios' });
   }
 
   try {
-    const hashed = await bcrypt.hash(senha, 10);
-    const sql = 'INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)';
-    db.query(sql, [nome, identificador, hashed], (err, result) => {
+    // Gerar identificador automaticamente
+    db.query('SELECT COUNT(*) as total FROM docentes', async (err, countResult) => {
       if (err) {
-        console.error('Erro ao inserir docente:', err);
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({ message: 'Identificador já existe', error: err.message });
-        }
-        return res.status(500).json({ message: 'Erro ao cadastrar docente', error: err.message });
+        return res.status(500).json({ message: 'Erro ao gerar identificador', error: err.message });
       }
-      return res.status(201).json({ message: 'Docente cadastrado', id: result.insertId });
+
+      const identificador = 'DOC' + String(countResult[0].total + 1).padStart(4, '0');
+      const hashed = await bcrypt.hash(senha, 10);
+      
+      const sql = 'INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)';
+      db.query(sql, [nome, identificador, hashed], (err, result) => {
+        if (err) {
+          console.error('Erro ao inserir docente:', err);
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'Identificador já existe', error: err.message });
+          }
+          return res.status(500).json({ message: 'Erro ao cadastrar docente', error: err.message });
+        }
+        return res.status(201).json({ message: 'Docente cadastrado', id: result.insertId, identificador });
+      });
     });
   } catch (e) {
     console.error('Erro ao hashear senha:', e);
