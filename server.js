@@ -282,18 +282,47 @@ app.delete('/turmas/:turmaId/alunos/:alunoId', (req, res) => {
 
 // Comunicados
 app.get('/comunicados', (req, res) => {
-  db.query('SELECT * FROM comunicados ORDER BY created_at DESC', (err, result) => {
-    if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados' });
-    res.json(result);
-  });
+  const { user_id, user_type } = req.query;
+  
+  if (user_id && user_type) {
+    // Buscar comunicados filtrados por destinatário
+    const sql = `
+      SELECT DISTINCT c.* FROM comunicados c
+      INNER JOIN comunicado_destinatarios cd ON c.id = cd.comunicado_id
+      WHERE cd.tipo = 'geral' 
+         OR (cd.tipo = ? AND cd.destinatario_id = ?)
+      ORDER BY c.created_at DESC
+    `;
+    db.query(sql, [user_type, user_id], (err, result) => {
+      if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados' });
+      res.json(result);
+    });
+  } else {
+    // Buscar todos os comunicados
+    db.query('SELECT * FROM comunicados ORDER BY created_at DESC', (err, result) => {
+      if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados' });
+      res.json(result);
+    });
+  }
 });
 
 app.post('/comunicados', (req, res) => {
-  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo } = req.body;
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, destinatarios_ids } = req.body;
   const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
   db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo], (err, result) => {
     if (err) return res.status(500).json({ message: 'Erro ao criar comunicado' });
-    res.json({ id: result.insertId });
+    
+    const comunicadoId = result.insertId;
+    
+    // Salvar destinatários
+    if (tipo_destinatario === 'geral') {
+      db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo) VALUES (?, ?)', [comunicadoId, 'geral'], () => {});
+    } else if (destinatarios_ids && destinatarios_ids.length > 0) {
+      const values = destinatarios_ids.map((id: number) => [comunicadoId, tipo_destinatario, id]);
+      db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo, destinatario_id) VALUES ?', [values], () => {});
+    }
+    
+    res.json({ id: comunicadoId });
   });
 });
 
