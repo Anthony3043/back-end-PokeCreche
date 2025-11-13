@@ -461,6 +461,18 @@ app.get('/termos/:user_type/:user_id', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
+// Endpoint temporário para adicionar colunas avatar
+app.get('/setup-avatar-columns', (req, res) => {
+  db.query('ALTER TABLE alunos ADD COLUMN IF NOT EXISTS avatar TEXT', (err1) => {
+    db.query('ALTER TABLE docentes ADD COLUMN IF NOT EXISTS avatar TEXT', (err2) => {
+      if (err1 || err2) {
+        return res.json({ success: false, error1: err1?.message, error2: err2?.message });
+      }
+      res.json({ success: true, message: 'Colunas avatar adicionadas' });
+    });
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
