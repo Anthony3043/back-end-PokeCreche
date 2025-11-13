@@ -11,10 +11,9 @@ app.use(express.json());
 app.use(cors({ 
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
-
-app.options('*', cors());
 
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST || 'localhost',
