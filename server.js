@@ -250,6 +250,14 @@ app.post('/turmas', (req, res) => {
   });
 });
 
+app.put('/turmas/:id', (req, res) => {
+  const { nome, ano } = req.body;
+  db.query('UPDATE turmas SET nome = ?, ano = ? WHERE id = ?', [nome, ano, req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao atualizar turma' });
+    res.json({ message: 'Turma atualizada' });
+  });
+});
+
 app.delete('/turmas/:id', (req, res) => {
   db.query('DELETE FROM turmas WHERE id = ?', [req.params.id], (err) => {
     if (err) return res.status(500).json({ message: 'Erro ao excluir turma' });
