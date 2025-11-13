@@ -322,7 +322,7 @@ app.post('/comunicados', (req, res) => {
     if (tipo_destinatario === 'geral') {
       db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo) VALUES (?, ?)', [comunicadoId, 'geral'], () => {});
     } else if (destinatarios_ids && destinatarios_ids.length > 0) {
-      const values = destinatarios_ids.map((id: number) => [comunicadoId, tipo_destinatario, id]);
+      const values = destinatarios_ids.map(id => [comunicadoId, tipo_destinatario, id]);
       db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo, destinatario_id) VALUES ?', [values], () => {});
     }
     
