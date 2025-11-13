@@ -404,12 +404,16 @@ app.get('/eventos', (req, res) => {
 
 app.post('/eventos', (req, res) => {
   const { date, title, color } = req.body;
-  if (!date || !title || !color) {
-    return res.status(400).json({ message: 'Campos obrigatórios: date, title, color' });
+  if (!date || !color) {
+    return res.status(400).json({ message: 'Campos obrigatórios: date, color' });
   }
+  const eventTitle = title || '';
   const sql = 'INSERT INTO calendario_events (teacher_id, date, title, color) VALUES (NULL, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, color = ?';
-  db.query(sql, [date, title, color, title, color], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Erro ao salvar evento', error: err.message });
+  db.query(sql, [date, eventTitle, color, eventTitle, color], (err, result) => {
+    if (err) {
+      console.error('Erro ao salvar evento:', err);
+      return res.status(500).json({ message: 'Erro ao salvar evento', error: err.message });
+    }
     res.json({ message: 'Evento salvo', id: result.insertId });
   });
 });
