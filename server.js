@@ -463,12 +463,11 @@ app.use(express.static(path.join(__dirname)));
 
 // Endpoint temporário para adicionar colunas avatar
 app.get('/setup-avatar-columns', (req, res) => {
-  db.query('ALTER TABLE alunos ADD COLUMN IF NOT EXISTS avatar TEXT', (err1) => {
-    db.query('ALTER TABLE docentes ADD COLUMN IF NOT EXISTS avatar TEXT', (err2) => {
-      if (err1 || err2) {
-        return res.json({ success: false, error1: err1?.message, error2: err2?.message });
-      }
-      res.json({ success: true, message: 'Colunas avatar adicionadas' });
+  db.query('ALTER TABLE alunos ADD COLUMN avatar TEXT', (err1) => {
+    db.query('ALTER TABLE docentes ADD COLUMN avatar TEXT', (err2) => {
+      const msg1 = err1 ? (err1.code === 'ER_DUP_FIELDNAME' ? 'Já existe' : err1.message) : 'OK';
+      const msg2 = err2 ? (err2.code === 'ER_DUP_FIELDNAME' ? 'Já existe' : err2.message) : 'OK';
+      res.json({ success: true, alunos: msg1, docentes: msg2 });
     });
   });
 });
