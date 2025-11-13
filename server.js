@@ -301,9 +301,19 @@ app.get('/turmas/:id/alunos', (req, res) => {
 
 app.post('/turmas/:id/alunos', (req, res) => {
   const { aluno_id } = req.body;
-  db.query('INSERT INTO turma_alunos (turma_id, aluno_id) VALUES (?, ?)', [req.params.id, aluno_id], (err) => {
-    if (err) return res.status(500).json({ message: 'Erro ao adicionar aluno' });
-    res.json({ message: 'Aluno adicionado' });
+  
+  // Verificar se o aluno já está em alguma turma
+  db.query('SELECT turma_id FROM turma_alunos WHERE aluno_id = ?', [aluno_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao verificar aluno' });
+    
+    if (result.length > 0) {
+      return res.status(400).json({ message: 'Aluno já está em outra turma' });
+    }
+    
+    db.query('INSERT INTO turma_alunos (turma_id, aluno_id) VALUES (?, ?)', [req.params.id, aluno_id], (err) => {
+      if (err) return res.status(500).json({ message: 'Erro ao adicionar aluno' });
+      res.json({ message: 'Aluno adicionado' });
+    });
   });
 });
 
