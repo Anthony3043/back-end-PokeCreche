@@ -226,11 +226,27 @@ app.get('/alunos', (req, res) => {
   });
 });
 
+app.put('/alunos/:id/avatar', (req, res) => {
+  const { avatar } = req.body;
+  db.query('UPDATE alunos SET avatar = ? WHERE id = ?', [avatar, req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao atualizar avatar' });
+    res.json({ message: 'Avatar atualizado' });
+  });
+});
+
 // Docentes
 app.get('/docentes', (req, res) => {
-  db.query('SELECT id, nome, identificador, email FROM docentes', (err, result) => {
+  db.query('SELECT id, nome, identificador, email, avatar FROM docentes', (err, result) => {
     if (err) return res.status(500).json({ message: 'Erro ao buscar docentes' });
     res.json(result);
+  });
+});
+
+app.put('/docentes/:id/avatar', (req, res) => {
+  const { avatar } = req.body;
+  db.query('UPDATE docentes SET avatar = ? WHERE id = ?', [avatar, req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: 'Erro ao atualizar avatar' });
+    res.json({ message: 'Avatar atualizado' });
   });
 });
 
