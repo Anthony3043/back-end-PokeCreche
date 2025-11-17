@@ -331,9 +331,15 @@ app.delete('/turmas/:turmaId/alunos/:alunoId', (req, res) => {
 
 // Comunicados
 app.get('/comunicados', (req, res) => {
-  const { user_id, user_type } = req.query;
+  const { user_id, user_type, docente_id } = req.query;
   
-  if (user_id && user_type) {
+  if (docente_id) {
+    // Buscar comunicados de um docente específico
+    db.query('SELECT * FROM comunicados WHERE docente_id = ? ORDER BY created_at DESC', [docente_id], (err, result) => {
+      if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados' });
+      res.json(result);
+    });
+  } else if (user_id && user_type) {
     // Buscar comunicados filtrados por destinatário
     const sql = `
       SELECT DISTINCT c.* FROM comunicados c
@@ -381,13 +387,13 @@ app.get('/comunicados/visiveis', (req, res) => {
 });
 
 app.post('/comunicados', (req, res) => {
-  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo } = req.body;
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, data } = req.body;
   
   if (!docente_id || !title || !message) {
     return res.status(400).json({ message: 'Campos obrigatórios: docente_id, title, message' });
   }
   
-  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   const values = [
     parseInt(docente_id),
     title.trim(),
@@ -397,7 +403,8 @@ app.post('/comunicados', (req, res) => {
     (cc || '').trim(),
     (bcc || '').trim(),
     icon || '📝',
-    tipo || 'default'
+    tipo || 'default',
+    data || null
   ];
   
   db.query(sql, values, (err, result) => {
