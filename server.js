@@ -16,19 +16,24 @@ app.use(cors({
   credentials: true
 }));
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || 'q1w2e3',
   database: process.env.MYSQLDATABASE || 'PokeCreche',
-  port: process.env.MYSQLPORT || 3306
+  port: process.env.MYSQLPORT || 3306,
+  connectionLimit: 10,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true
 });
 
-db.connect((err) => {
+db.getConnection((err, connection) => {
   if (err) {
     console.error('Erro ao conectar ao MySQL:', err.message);
   } else {
     console.log('Conectado ao MySQL');
+    connection.release();
   }
 });
 
