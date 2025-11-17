@@ -64,6 +64,11 @@ body, html { height: 100%; margin: 0; font-family: 'Comic Neue', 'Comic Sans MS'
 }
 .btn-submit:hover { background-color: #a35207; }
 
+.item-lista {
+  background: #fff; padding: 15px; margin: 10px 0; border-radius: 10px;
+  border: 1px solid #c99a62; text-align: left; color: #4b3a00;
+}
+
 .forgot-text { margin-top: 8px; font-size: 14px; color: #6b3f00; cursor: pointer; user-select: none; }
 
 /* Responsivo */
