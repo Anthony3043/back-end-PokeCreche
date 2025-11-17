@@ -381,29 +381,32 @@ app.get('/comunicados/visiveis', (req, res) => {
 });
 
 app.post('/comunicados', (req, res) => {
-  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, destinatarios_ids, visibilidade, tipo_visibilidade } = req.body;
-  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, visibilidade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario || 'geral', visibilidade || 'publico'], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Erro ao criar comunicado' });
-    
-    const comunicadoId = result.insertId;
-    
-    // Salvar destinatários
-    if (tipo_destinatario === 'geral') {
-      db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo) VALUES (?, ?)', [comunicadoId, 'geral'], () => {});
-    } else if (destinatarios_ids && destinatarios_ids.length > 0) {
-      const values = destinatarios_ids.map(id => [comunicadoId, tipo_destinatario, id]);
-      db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo, destinatario_id) VALUES ?', [values], () => {});
-      
-      // Para comunicados privados, criar registros de visibilidade
-      if (visibilidade === 'privado') {
-        const visibilityValues = destinatarios_ids.map(id => [comunicadoId, tipo_destinatario, id, true]);
-        visibilityValues.push([comunicadoId, 'docente', docente_id, true]); // Docente sempre pode ver
-        db.query('INSERT INTO comunicado_visibilidade (comunicado_id, user_type, user_id, pode_visualizar) VALUES ?', [visibilityValues], () => {});
-      }
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo } = req.body;
+  
+  if (!docente_id || !title || !message) {
+    return res.status(400).json({ message: 'Campos obrigatórios: docente_id, title, message' });
+  }
+  
+  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const values = [
+    parseInt(docente_id),
+    title.trim(),
+    (subject || title).trim(),
+    message.trim(),
+    (destinatarios || 'Geral').trim(),
+    (cc || '').trim(),
+    (bcc || '').trim(),
+    icon || '📝',
+    tipo || 'default'
+  ];
+  
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('Erro ao criar comunicado:', err);
+      return res.status(500).json({ message: 'Erro ao criar comunicado', error: err.message });
     }
     
-    res.json({ id: comunicadoId });
+    res.json({ id: result.insertId, message: 'Comunicado criado com sucesso' });
   });
 });
 
