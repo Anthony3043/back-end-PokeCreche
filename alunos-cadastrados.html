@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alunos Cadastrados</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <header class="ion-header" role="banner">
+    <div class="ion-toolbar">
+      <div class="ion-title">Alunos Cadastrados</div>
+    </div>
+  </header>
+
+  <main class="ion-content background-content">
+    <div id="container">
+      <div class="balao-principal">
+        <h1>Alunos Cadastrados</h1>
+
+        <div class="balao-interno">
+          <div id="lista-alunos">
+            <p>Carregando alunos...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const baseUrl = 'https://back-end-pokecreche-production.up.railway.app';
+    
+    async function carregarAlunos() {
+      try {
+        const res = await fetch(baseUrl + '/alunos');
+        const alunos = await res.json();
+        
+        const lista = document.getElementById('lista-alunos');
+        if (alunos.length === 0) {
+          lista.innerHTML = '<p>Nenhum aluno cadastrado.</p>';
+        } else {
+          lista.innerHTML = alunos.map(aluno => 
+            `<div class="item-lista">
+              <strong>Nome:</strong> ${aluno.nome}<br>
+              <strong>CPF:</strong> ${aluno.cpf}
+            </div>`
+          ).join('');
+        }
+      } catch (err) {
+        document.getElementById('lista-alunos').innerHTML = '<p>Erro ao carregar alunos.</p>';
+      }
+    }
+
+    carregarAlunos();
+  </script>
+</body>
+</html>

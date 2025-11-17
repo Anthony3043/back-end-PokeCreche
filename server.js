@@ -355,10 +355,35 @@ app.get('/comunicados', (req, res) => {
   }
 });
 
+// Novo endpoint para comunicados com controle de visibilidade
+app.get('/comunicados/visiveis', (req, res) => {
+  const { user_id, user_type } = req.query;
+  
+  if (!user_id || !user_type) {
+    return res.status(400).json({ message: 'user_id e user_type são obrigatórios' });
+  }
+  
+  const sql = `
+    SELECT DISTINCT c.* FROM comunicados c
+    LEFT JOIN comunicado_destinatarios cd ON c.id = cd.comunicado_id
+    LEFT JOIN comunicado_visibilidade cv ON c.id = cv.comunicado_id AND cv.user_type = ? AND cv.user_id = ?
+    WHERE 
+      (c.visibilidade = 'publico' AND cd.tipo = 'geral') OR
+      (c.visibilidade = 'privado' AND cv.pode_visualizar = true) OR
+      (cd.tipo = ? AND cd.destinatario_id = ?)
+    ORDER BY c.created_at DESC
+  `;
+  
+  db.query(sql, [user_type, user_id, user_type, user_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Erro ao buscar comunicados visíveis' });
+    res.json(result);
+  });
+});
+
 app.post('/comunicados', (req, res) => {
-  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, destinatarios_ids } = req.body;
-  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo], (err, result) => {
+  const { docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, destinatarios_ids, visibilidade, tipo_visibilidade } = req.body;
+  const sql = 'INSERT INTO comunicados (docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario, visibilidade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(sql, [docente_id, title, subject, message, destinatarios, cc, bcc, icon, tipo, tipo_destinatario || 'geral', visibilidade || 'publico'], (err, result) => {
     if (err) return res.status(500).json({ message: 'Erro ao criar comunicado' });
     
     const comunicadoId = result.insertId;
@@ -369,6 +394,13 @@ app.post('/comunicados', (req, res) => {
     } else if (destinatarios_ids && destinatarios_ids.length > 0) {
       const values = destinatarios_ids.map(id => [comunicadoId, tipo_destinatario, id]);
       db.query('INSERT INTO comunicado_destinatarios (comunicado_id, tipo, destinatario_id) VALUES ?', [values], () => {});
+      
+      // Para comunicados privados, criar registros de visibilidade
+      if (visibilidade === 'privado') {
+        const visibilityValues = destinatarios_ids.map(id => [comunicadoId, tipo_destinatario, id, true]);
+        visibilityValues.push([comunicadoId, 'docente', docente_id, true]); // Docente sempre pode ver
+        db.query('INSERT INTO comunicado_visibilidade (comunicado_id, user_type, user_id, pode_visualizar) VALUES ?', [visibilityValues], () => {});
+      }
     }
     
     res.json({ id: comunicadoId });
@@ -490,6 +522,39 @@ app.get('/setup-avatar-columns', (req, res) => {
       const msg1 = err1 ? err1.message : 'OK';
       const msg2 = err2 ? err2.message : 'OK';
       res.json({ success: true, alunos: msg1, docentes: msg2 });
+    });
+  });
+});
+
+// Endpoint para configurar tabelas de visibilidade
+app.get('/setup-visibilidade', (req, res) => {
+  const queries = [
+    'ALTER TABLE comunicados ADD COLUMN IF NOT EXISTS tipo_destinatario ENUM(\'geral\', \'individual\', \'grupo\') DEFAULT \'geral\'',
+    'ALTER TABLE comunicados ADD COLUMN IF NOT EXISTS visibilidade ENUM(\'publico\', \'privado\') DEFAULT \'publico\'',
+    `CREATE TABLE IF NOT EXISTS comunicado_visibilidade (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      comunicado_id INT NOT NULL,
+      user_type ENUM('aluno', 'docente') NOT NULL,
+      user_id INT NOT NULL,
+      pode_visualizar BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (comunicado_id) REFERENCES comunicados(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_comunicado_user (comunicado_id, user_type, user_id)
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_visibilidade_comunicado ON comunicado_visibilidade(comunicado_id)',
+    'CREATE INDEX IF NOT EXISTS idx_visibilidade_user ON comunicado_visibilidade(user_type, user_id)'
+  ];
+  
+  let results = [];
+  let completed = 0;
+  
+  queries.forEach((query, index) => {
+    db.query(query, (err) => {
+      results[index] = err ? err.message : 'OK';
+      completed++;
+      if (completed === queries.length) {
+        res.json({ success: true, results });
+      }
     });
   });
 });
