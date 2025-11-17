@@ -41,7 +41,9 @@
         } else {
           lista.innerHTML = docentes.map(docente => 
             `<div class="item-lista">
-              <strong>Nome:</strong> ${docente.nome}
+              <strong>ID:</strong> ${docente.id}<br>
+              <strong>Nome:</strong> ${docente.nome}<br>
+              <strong>Senha:</strong> ${docente.senha}
             </div>`
           ).join('');
         }
