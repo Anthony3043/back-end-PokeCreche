@@ -536,6 +536,17 @@ app.get('/setup-avatar-columns', (req, res) => {
   });
 });
 
+// Endpoint para adicionar coluna data
+app.get('/setup-data-column', (req, res) => {
+  db.query('ALTER TABLE comunicados ADD COLUMN IF NOT EXISTS data DATE', (err) => {
+    if (err) {
+      console.error('Erro ao adicionar coluna data:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true, message: 'Coluna data adicionada com sucesso' });
+  });
+});
+
 // Endpoint para configurar tabelas de visibilidade
 app.get('/setup-visibilidade', (req, res) => {
   const queries = [
