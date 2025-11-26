@@ -71,6 +71,8 @@ async function ensureTables() {
       nome VARCHAR(255) NOT NULL,
       cpf VARCHAR(20) NOT NULL UNIQUE,
       matricula VARCHAR(50) NOT NULL,
+      avatar TEXT,
+      turma_id INT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
@@ -83,12 +85,36 @@ async function ensureTables() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
+  const createTurmas = `
+    CREATE TABLE IF NOT EXISTS turmas (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      ano VARCHAR(10) NOT NULL,
+      foto TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
+
+  const createRegistros = `
+    CREATE TABLE IF NOT EXISTS registros (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      aluno_id INT NOT NULL,
+      turma_id INT NOT NULL,
+      data DATE NOT NULL,
+      alimentacao VARCHAR(50),
+      comportamento VARCHAR(50),
+      presenca VARCHAR(50),
+      observacoes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
+
   const poolInstance = getPool();
   const conn = await poolInstance.getConnection();
   
   try {
     await conn.query(createAlunos);
     await conn.query(createDocentes);
+    await conn.query(createTurmas);
+    await conn.query(createRegistros);
     console.log('✅ Tabelas verificadas/criadas');
   } catch (error) {
     console.error('❌ Erro nas tabelas:', error.message);
@@ -240,6 +266,203 @@ app.post('/register/docente', async (req, res) => {
   } catch (error) {
     console.error('Erro:', error);
     return res.status(500).json({ message: 'Erro ao cadastrar docente. Verifique se o banco está configurado.' });
+  }
+});
+
+// ===== ROTAS TURMAS =====
+
+// Listar turmas
+app.get('/turmas', async (req, res) => {
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [rows] = await conn.query('SELECT id, nome, ano, foto FROM turmas ORDER BY nome');
+    conn.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar turmas:', error);
+    res.status(500).json({ error: 'Erro ao buscar turmas' });
+  }
+});
+
+// Criar turma
+app.post('/turmas', async (req, res) => {
+  const { nome, ano } = req.body;
+  
+  if (!nome || !ano) {
+    return res.status(400).json({ error: 'Nome e ano são obrigatórios' });
+  }
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [result] = await conn.query('INSERT INTO turmas (nome, ano) VALUES (?, ?)', [nome, ano]);
+    conn.release();
+    
+    res.status(201).json({ id: result.insertId, nome, ano });
+  } catch (error) {
+    console.error('Erro ao criar turma:', error);
+    res.status(500).json({ error: 'Erro ao criar turma' });
+  }
+});
+
+// Atualizar turma
+app.put('/turmas/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, ano, foto } = req.body;
+  
+  if (!nome || !ano) {
+    return res.status(400).json({ error: 'Nome e ano são obrigatórios' });
+  }
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    
+    let query = 'UPDATE turmas SET nome = ?, ano = ?';
+    let params = [nome, ano];
+    
+    if (foto) {
+      query += ', foto = ?';
+      params.push(foto);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    await conn.query(query, params);
+    conn.release();
+    
+    res.json({ message: 'Turma atualizada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao atualizar turma:', error);
+    res.status(500).json({ error: 'Erro ao atualizar turma' });
+  }
+});
+
+// Deletar turma
+app.delete('/turmas/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    await conn.query('DELETE FROM turmas WHERE id = ?', [id]);
+    conn.release();
+    
+    res.json({ message: 'Turma excluída com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir turma:', error);
+    res.status(500).json({ error: 'Erro ao excluir turma' });
+  }
+});
+
+// Listar alunos de uma turma
+app.get('/turmas/:id/alunos', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [rows] = await conn.query('SELECT id, nome, matricula, avatar FROM alunos WHERE turma_id = ?', [id]);
+    conn.release();
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar alunos:', error);
+    res.status(500).json({ error: 'Erro ao buscar alunos' });
+  }
+});
+
+// Listar todos os alunos
+app.get('/alunos', async (req, res) => {
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [rows] = await conn.query('SELECT id, nome, matricula, avatar, turma_id FROM alunos ORDER BY nome');
+    conn.release();
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar alunos:', error);
+    res.status(500).json({ error: 'Erro ao buscar alunos' });
+  }
+});
+
+// Adicionar aluno à turma
+app.post('/turmas/:id/alunos', async (req, res) => {
+  const { id } = req.params;
+  const { aluno_id } = req.body;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    await conn.query('UPDATE alunos SET turma_id = ? WHERE id = ?', [id, aluno_id]);
+    conn.release();
+    
+    res.json({ message: 'Aluno adicionado à turma' });
+  } catch (error) {
+    console.error('Erro ao adicionar aluno:', error);
+    res.status(500).json({ error: 'Erro ao adicionar aluno à turma' });
+  }
+});
+
+// Remover aluno da turma
+app.delete('/turmas/:turmaId/alunos/:alunoId', async (req, res) => {
+  const { alunoId } = req.params;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    await conn.query('UPDATE alunos SET turma_id = NULL WHERE id = ?', [alunoId]);
+    conn.release();
+    
+    res.json({ message: 'Aluno removido da turma' });
+  } catch (error) {
+    console.error('Erro ao remover aluno:', error);
+    res.status(500).json({ error: 'Erro ao remover aluno da turma' });
+  }
+});
+
+// ===== ROTAS REGISTROS =====
+
+// Criar registro
+app.post('/registros', async (req, res) => {
+  const { aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes } = req.body;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [result] = await conn.query(
+      'INSERT INTO registros (aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes]
+    );
+    conn.release();
+    
+    res.status(201).json({ id: result.insertId, message: 'Registro criado com sucesso' });
+  } catch (error) {
+    console.error('Erro ao criar registro:', error);
+    res.status(500).json({ error: 'Erro ao criar registro' });
+  }
+});
+
+// Listar registros de um aluno
+app.get('/registros/:alunoId', async (req, res) => {
+  const { alunoId } = req.params;
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    const [rows] = await conn.query(
+      'SELECT * FROM registros WHERE aluno_id = ? ORDER BY data DESC',
+      [alunoId]
+    );
+    conn.release();
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar registros:', error);
+    res.status(500).json({ error: 'Erro ao buscar registros' });
   }
 });
 
