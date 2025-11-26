@@ -91,8 +91,16 @@ async function ensureTables() {
       nome VARCHAR(255) NOT NULL,
       ano VARCHAR(10) NOT NULL,
       foto TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`;
+
+  // Adicionar coluna foto se não existir (para bancos existentes)
+  const addFotoColumn = `
+    ALTER TABLE turmas 
+    ADD COLUMN IF NOT EXISTS foto TEXT,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `;
 
   const createRegistros = `
     CREATE TABLE IF NOT EXISTS registros (
@@ -115,6 +123,16 @@ async function ensureTables() {
     await conn.query(createDocentes);
     await conn.query(createTurmas);
     await conn.query(createRegistros);
+    
+    // Tentar adicionar coluna foto se não existir
+    try {
+      await conn.query(addFotoColumn);
+      console.log('✅ Coluna foto verificada/adicionada');
+    } catch (alterError) {
+      // Ignorar erro se coluna já existir
+      console.log('ℹ️  Coluna foto já existe ou erro na migração');
+    }
+    
     console.log('✅ Tabelas verificadas/criadas');
   } catch (error) {
     console.error('❌ Erro nas tabelas:', error.message);
