@@ -22,14 +22,7 @@ class CrecheApp {
     }
 
     setupEventListeners() {
-        // Interceptar todos os forms com classe .ajax-form
-        document.addEventListener('submit', (e) => {
-            const form = e.target;
-            if (form.classList.contains('ajax-form') || form.id.includes('form-')) {
-                e.preventDefault();
-                this.handleFormSubmit(form);
-            }
-        });
+        // Forms específicos serão tratados individualmente
 
         // Loading states para botões
         document.addEventListener('click', (e) => {
