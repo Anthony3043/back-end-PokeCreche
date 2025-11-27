@@ -27,7 +27,7 @@
 body, html { 
     min-height: 100%; 
     font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--background-light);
     display: flex;
     flex-direction: column;
 }
