@@ -362,12 +362,9 @@ class CrecheApp {
             const response = await fetch(`${this.config.baseUrl}/api/health`);
             if (response.ok) {
                 console.log('✅ Sistema está saudável');
-            } else {
-                console.warn('⚠️ Sistema com problemas');
-                this.showNotification('Sistema com instabilidades', 'warning');
             }
         } catch (error) {
-            console.error('❌ Erro ao verificar status do sistema:', error);
+            console.log('ℹ️ Verificação de status ignorada');
         }
     }
 
