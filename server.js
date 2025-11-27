@@ -1,36 +1,36 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const path = require('path');
-const expressLayouts = require('express-ejs-layouts');
+const express = require("express");
+const mysql = require("mysql2/promise");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const path = require("path");
+const expressLayouts = require("express-ejs-layouts");
 
 const app = express();
 
 // CONFIGURAÇÃO EJS
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 // Use express-ejs-layouts to automatically wrap page templates with views/layout.ejs
 app.use(expressLayouts);
-app.set('layout', 'layout');
+app.set("layout", "layout");
 
 app.use(express.json());
 app.use(cors());
 // Servir arquivos estáticos
-app.use('/css', express.static(path.join(__dirname, 'public/css')));
-app.use('/js', express.static(path.join(__dirname, 'public/js')));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use("/css", express.static(path.join(__dirname, "public/css")));
+app.use("/js", express.static(path.join(__dirname, "public/js")));
+app.use(express.static(path.join(__dirname, "public")));
 
-const JWT_SECRET = process.env.JWT_SECRET || 'pokecreche_secret';
+const JWT_SECRET = process.env.JWT_SECRET || "pokecreche_secret";
 
 // ===== CONFIGURAÇÃO DO BANCO =====
 function getDbConfig() {
   // Produção: usar DATABASE_URL
   if (process.env.DATABASE_URL) {
-    console.log('✅ Usando DATABASE_URL');
+    console.log("✅ Usando DATABASE_URL");
     const url = new URL(process.env.DATABASE_URL);
     return {
       host: url.hostname,
@@ -40,28 +40,31 @@ function getDbConfig() {
       port: url.port || 3306,
       waitForConnections: true,
       connectionLimit: 10,
-      timezone: '+00:00',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      timezone: "+00:00",
+      ssl:
+        process.env.NODE_ENV === "production"
+          ? { rejectUnauthorized: false }
+          : false,
     };
   }
 
   // Desenvolvimento local
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('⚠️  Usando configuração local');
+  if (process.env.NODE_ENV !== "production") {
+    console.log("⚠️  Usando configuração local");
     return {
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'q1w2e3',
-      database: process.env.DB_NAME || 'pokecreche',
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASSWORD || "q1w2e3",
+      database: process.env.DB_NAME || "pokecreche",
       port: process.env.DB_PORT || 3306,
       waitForConnections: true,
       connectionLimit: 10,
-      timezone: '+00:00'
+      timezone: "+00:00",
     };
   }
 
   // Erro se não tiver configuração
-  throw new Error('DATABASE_URL é obrigatória em produção');
+  throw new Error("DATABASE_URL é obrigatória em produção");
 }
 
 let pool = null;
@@ -76,8 +79,8 @@ function getPool() {
 
 // Criar tabelas se não existirem
 async function ensureTables() {
-  console.log('🔧 Verificando tabelas...');
-  
+  console.log("🔧 Verificando tabelas...");
+
   const createAlunos = `
     CREATE TABLE IF NOT EXISTS alunos (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -130,25 +133,25 @@ async function ensureTables() {
 
   const poolInstance = getPool();
   const conn = await poolInstance.getConnection();
-  
+
   try {
     await conn.query(createAlunos);
     await conn.query(createDocentes);
     await conn.query(createTurmas);
     await conn.query(createRegistros);
-    
+
     // Tentar adicionar coluna foto se não existir
     try {
       await conn.query(addFotoColumn);
-      console.log('✅ Coluna foto verificada/adicionada');
+      console.log("✅ Coluna foto verificada/adicionada");
     } catch (alterError) {
       // Ignorar erro se coluna já existir
-      console.log('ℹ️  Coluna foto já existe ou erro na migração');
+      console.log("ℹ️  Coluna foto já existe ou erro na migração");
     }
-    
-    console.log('✅ Tabelas verificadas/criadas');
+
+    console.log("✅ Tabelas verificadas/criadas");
   } catch (error) {
-    console.error('❌ Erro nas tabelas:', error.message);
+    console.error("❌ Erro nas tabelas:", error.message);
   } finally {
     conn.release();
   }
@@ -157,118 +160,138 @@ async function ensureTables() {
 // ===== ROTAS PRINCIPAIS =====
 
 // Página inicial
-app.get('/', async (req, res) => {
+app.get("/", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-    
-    res.render('pages/alunos', {
-      title: 'Cadastro do Aluno - PokeCreche',
-      currentPage: 'alunos',
-      baseUrl: baseUrl
+    const baseUrl =
+      process.env.RAILWAY_STATIC_URL ||
+      `http://localhost:${process.env.PORT || 3000}`;
+
+    res.render("pages/alunos", {
+      title: "Cadastro do Aluno - PokeCreche",
+      currentPage: "alunos",
+      baseUrl: baseUrl,
     });
   } catch (error) {
-    res.status(500).send('Erro ao carregar página');
+    res.status(500).send("Erro ao carregar página");
   }
 });
 
-app.get('/alunos', async (req, res) => {
+app.get("/alunos", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-    
-    res.render('pages/alunos', {
-      title: 'Cadastro do Aluno - PokeCreche',
-      currentPage: 'alunos',
-      baseUrl: baseUrl
+    const baseUrl =
+      process.env.RAILWAY_STATIC_URL ||
+      `http://localhost:${process.env.PORT || 3000}`;
+
+    res.render("pages/alunos", {
+      title: "Cadastro do Aluno - PokeCreche",
+      currentPage: "alunos",
+      baseUrl: baseUrl,
     });
   } catch (error) {
-    res.status(500).send('Erro ao carregar página');
+    res.status(500).send("Erro ao carregar página");
   }
 });
 
-app.get('/docentes', async (req, res) => {
+app.get("/docentes", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl = process.env.RAILWAY_STATIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-    
-    res.render('pages/docentes', {
-      title: 'Cadastro do Docente - PokeCreche',
-      currentPage: 'docentes',
-      baseUrl: baseUrl
+    const baseUrl =
+      process.env.RAILWAY_STATIC_URL ||
+      `http://localhost:${process.env.PORT || 3000}`;
+
+    res.render("pages/docentes", {
+      title: "Cadastro do Docente - PokeCreche",
+      currentPage: "docentes",
+      baseUrl: baseUrl,
     });
   } catch (error) {
-    res.status(500).send('Erro ao carregar página');
+    res.status(500).send("Erro ao carregar página");
   }
 });
 
 // Health Check
-app.get('/api/health', async (req, res) => {
+app.get("/api/health", async (req, res) => {
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    await conn.query('SELECT 1');
+    await conn.query("SELECT 1");
     conn.release();
-    
-    res.json({ 
-      status: 'healthy', 
-      message: '🚀 PokeCreche Online!',
-      environment: process.env.NODE_ENV || 'development',
-      platform: 'railway'
+
+    res.json({
+      status: "healthy",
+      message: "🚀 PokeCreche Online!",
+      environment: process.env.NODE_ENV || "development",
+      platform: "railway",
     });
   } catch (error) {
-    res.status(503).json({ 
-      status: 'unhealthy', 
-      error: 'Banco de dados não conectado',
-      message: 'Adicione um banco MySQL no Railway'
+    res.status(503).json({
+      status: "unhealthy",
+      error: "Banco de dados não conectado",
+      message: "Adicione um banco MySQL no Railway",
     });
   }
 });
 
 // Cadastro de Aluno
-app.post('/register/aluno', async (req, res) => {
+app.post("/register/aluno", async (req, res) => {
   const { nome, cpf, matricula } = req.body || {};
-  
+
   if (!nome || !cpf || !matricula) {
-    return res.status(400).json({ message: 'Campos nome, cpf e matricula são obrigatórios' });
+    return res
+      .status(400)
+      .json({ message: "Campos nome, cpf e matricula são obrigatórios" });
   }
 
   try {
-    const cpfClean = cpf.replace(/\D+/g, '');
+    const cpfClean = cpf.replace(/\D+/g, "");
     const matriculaStr = String(matricula).trim();
 
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    
+
     // Verificar se já existe
-    const [existing] = await conn.query('SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1', [matriculaStr, cpfClean]);
-    
+    const [existing] = await conn.query(
+      "SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1",
+      [matriculaStr, cpfClean]
+    );
+
     if (existing.length > 0) {
       conn.release();
-      return res.status(409).json({ message: 'Aluno já cadastrado' });
+      return res.status(409).json({ message: "Aluno já cadastrado" });
     }
 
     // Inserir novo aluno
-    const [result] = await conn.query('INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)', [nome, cpfClean, matriculaStr]);
+    const [result] = await conn.query(
+      "INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)",
+      [nome, cpfClean, matriculaStr]
+    );
     conn.release();
-    
-    return res.status(201).json({ 
-      message: '🎉 Aluno cadastrado com sucesso!', 
-      id: result.insertId 
+
+    return res.status(201).json({
+      message: "🎉 Aluno cadastrado com sucesso!",
+      id: result.insertId,
     });
-    
   } catch (error) {
-    console.error('Erro:', error);
-    return res.status(500).json({ message: 'Erro ao cadastrar aluno. Verifique se o banco está configurado.' });
+    console.error("Erro:", error);
+    return res
+      .status(500)
+      .json({
+        message:
+          "Erro ao cadastrar aluno. Verifique se o banco está configurado.",
+      });
   }
 });
 
 // Cadastro de Docente
-app.post('/register/docente', async (req, res) => {
+app.post("/register/docente", async (req, res) => {
   const { nome, identificador, senha } = req.body || {};
-  
+
   if (!nome || !identificador || !senha) {
-    return res.status(400).json({ message: 'Campos nome, identificador e senha são obrigatórios' });
+    return res
+      .status(400)
+      .json({ message: "Campos nome, identificador e senha são obrigatórios" });
   }
 
   try {
@@ -276,234 +299,277 @@ app.post('/register/docente', async (req, res) => {
 
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    
+
     // Verificar se já existe
-    const [existing] = await conn.query('SELECT id FROM docentes WHERE identificador = ? LIMIT 1', [identificador]);
-    
+    const [existing] = await conn.query(
+      "SELECT id FROM docentes WHERE identificador = ? LIMIT 1",
+      [identificador]
+    );
+
     if (existing.length > 0) {
       conn.release();
-      return res.status(409).json({ message: 'Docente já cadastrado' });
+      return res.status(409).json({ message: "Docente já cadastrado" });
     }
 
     // Inserir novo docente
-    const [result] = await conn.query('INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)', [nome, identificador, hashed]);
+    const [result] = await conn.query(
+      "INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)",
+      [nome, identificador, hashed]
+    );
     conn.release();
-    
-    return res.status(201).json({ 
-      message: '🎉 Docente cadastrado com sucesso!', 
-      id: result.insertId 
+
+    return res.status(201).json({
+      message: "🎉 Docente cadastrado com sucesso!",
+      id: result.insertId,
     });
-    
   } catch (error) {
-    console.error('Erro:', error);
-    return res.status(500).json({ message: 'Erro ao cadastrar docente. Verifique se o banco está configurado.' });
+    console.error("Erro:", error);
+    return res
+      .status(500)
+      .json({
+        message:
+          "Erro ao cadastrar docente. Verifique se o banco está configurado.",
+      });
   }
 });
 
 // ===== ROTAS TURMAS =====
 
 // Listar turmas
-app.get('/turmas', async (req, res) => {
+app.get("/turmas", async (req, res) => {
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    const [rows] = await conn.query('SELECT id, nome, ano, foto FROM turmas ORDER BY nome');
+    const [rows] = await conn.query(
+      "SELECT id, nome, ano, foto FROM turmas ORDER BY nome"
+    );
     conn.release();
     res.json(rows);
   } catch (error) {
-    console.error('Erro ao buscar turmas:', error);
-    res.status(500).json({ error: 'Erro ao buscar turmas' });
+    console.error("Erro ao buscar turmas:", error);
+    res.status(500).json({ error: "Erro ao buscar turmas" });
   }
 });
 
 // Criar turma
-app.post('/turmas', async (req, res) => {
+app.post("/turmas", async (req, res) => {
   const { nome, ano } = req.body;
-  
+
   if (!nome || !ano) {
-    return res.status(400).json({ error: 'Nome e ano são obrigatórios' });
+    return res.status(400).json({ error: "Nome e ano são obrigatórios" });
   }
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    const [result] = await conn.query('INSERT INTO turmas (nome, ano) VALUES (?, ?)', [nome, ano]);
+    const [result] = await conn.query(
+      "INSERT INTO turmas (nome, ano) VALUES (?, ?)",
+      [nome, ano]
+    );
     conn.release();
-    
+
     res.status(201).json({ id: result.insertId, nome, ano });
   } catch (error) {
-    console.error('Erro ao criar turma:', error);
-    res.status(500).json({ error: 'Erro ao criar turma' });
+    console.error("Erro ao criar turma:", error);
+    res.status(500).json({ error: "Erro ao criar turma" });
   }
 });
 
 // Atualizar turma
-app.put('/turmas/:id', async (req, res) => {
+app.put("/turmas/:id", async (req, res) => {
   const { id } = req.params;
   const { nome, ano, foto } = req.body;
-  
+
   if (!nome || !ano) {
-    return res.status(400).json({ error: 'Nome e ano são obrigatórios' });
+    return res.status(400).json({ error: "Nome e ano são obrigatórios" });
   }
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    
-    let query = 'UPDATE turmas SET nome = ?, ano = ?';
+
+    let query = "UPDATE turmas SET nome = ?, ano = ?";
     let params = [nome, ano];
-    
+
     if (foto) {
-      query += ', foto = ?';
+      query += ", foto = ?";
       params.push(foto);
     }
-    
-    query += ' WHERE id = ?';
+
+    query += " WHERE id = ?";
     params.push(id);
-    
+
     await conn.query(query, params);
     conn.release();
-    
-    res.json({ message: 'Turma atualizada com sucesso' });
+
+    res.json({ message: "Turma atualizada com sucesso" });
   } catch (error) {
-    console.error('Erro ao atualizar turma:', error);
-    res.status(500).json({ error: 'Erro ao atualizar turma' });
+    console.error("Erro ao atualizar turma:", error);
+    res.status(500).json({ error: "Erro ao atualizar turma" });
   }
 });
 
 // Deletar turma
-app.delete('/turmas/:id', async (req, res) => {
+app.delete("/turmas/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    await conn.query('DELETE FROM turmas WHERE id = ?', [id]);
+    await conn.query("DELETE FROM turmas WHERE id = ?", [id]);
     conn.release();
-    
-    res.json({ message: 'Turma excluída com sucesso' });
+
+    res.json({ message: "Turma excluída com sucesso" });
   } catch (error) {
-    console.error('Erro ao excluir turma:', error);
-    res.status(500).json({ error: 'Erro ao excluir turma' });
+    console.error("Erro ao excluir turma:", error);
+    res.status(500).json({ error: "Erro ao excluir turma" });
   }
 });
 
 // Listar alunos de uma turma
-app.get('/turmas/:id/alunos', async (req, res) => {
+app.get("/turmas/:id/alunos", async (req, res) => {
   const { id } = req.params;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    const [rows] = await conn.query('SELECT id, nome, matricula, avatar FROM alunos WHERE turma_id = ?', [id]);
+    const [rows] = await conn.query(
+      "SELECT id, nome, matricula, avatar FROM alunos WHERE turma_id = ?",
+      [id]
+    );
     conn.release();
-    
+
     res.json(rows);
   } catch (error) {
-    console.error('Erro ao buscar alunos:', error);
-    res.status(500).json({ error: 'Erro ao buscar alunos' });
+    console.error("Erro ao buscar alunos:", error);
+    res.status(500).json({ error: "Erro ao buscar alunos" });
   }
 });
 
 // Listar todos os alunos
-app.get('/alunos', async (req, res) => {
+app.get("/alunos", async (req, res) => {
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    const [rows] = await conn.query('SELECT id, nome, matricula, avatar, turma_id FROM alunos ORDER BY nome');
+    const [rows] = await conn.query(
+      "SELECT id, nome, matricula, avatar, turma_id FROM alunos ORDER BY nome"
+    );
     conn.release();
-    
+
     res.json(rows);
   } catch (error) {
-    console.error('Erro ao buscar alunos:', error);
-    res.status(500).json({ error: 'Erro ao buscar alunos' });
+    console.error("Erro ao buscar alunos:", error);
+    res.status(500).json({ error: "Erro ao buscar alunos" });
   }
 });
 
 // Adicionar aluno à turma
-app.post('/turmas/:id/alunos', async (req, res) => {
+app.post("/turmas/:id/alunos", async (req, res) => {
   const { id } = req.params;
   const { aluno_id } = req.body;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    await conn.query('UPDATE alunos SET turma_id = ? WHERE id = ?', [id, aluno_id]);
+    await conn.query("UPDATE alunos SET turma_id = ? WHERE id = ?", [
+      id,
+      aluno_id,
+    ]);
     conn.release();
-    
-    res.json({ message: 'Aluno adicionado à turma' });
+
+    res.json({ message: "Aluno adicionado à turma" });
   } catch (error) {
-    console.error('Erro ao adicionar aluno:', error);
-    res.status(500).json({ error: 'Erro ao adicionar aluno à turma' });
+    console.error("Erro ao adicionar aluno:", error);
+    res.status(500).json({ error: "Erro ao adicionar aluno à turma" });
   }
 });
 
 // Remover aluno da turma
-app.delete('/turmas/:turmaId/alunos/:alunoId', async (req, res) => {
+app.delete("/turmas/:turmaId/alunos/:alunoId", async (req, res) => {
   const { alunoId } = req.params;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
-    await conn.query('UPDATE alunos SET turma_id = NULL WHERE id = ?', [alunoId]);
+    await conn.query("UPDATE alunos SET turma_id = NULL WHERE id = ?", [
+      alunoId,
+    ]);
     conn.release();
-    
-    res.json({ message: 'Aluno removido da turma' });
+
+    res.json({ message: "Aluno removido da turma" });
   } catch (error) {
-    console.error('Erro ao remover aluno:', error);
-    res.status(500).json({ error: 'Erro ao remover aluno da turma' });
+    console.error("Erro ao remover aluno:", error);
+    res.status(500).json({ error: "Erro ao remover aluno da turma" });
   }
 });
 
 // ===== ROTAS REGISTROS =====
 
 // Criar registro
-app.post('/registros', async (req, res) => {
-  const { aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes } = req.body;
+app.post("/registros", async (req, res) => {
+  const {
+    aluno_id,
+    turma_id,
+    data,
+    alimentacao,
+    comportamento,
+    presenca,
+    observacoes,
+  } = req.body;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
     const [result] = await conn.query(
-      'INSERT INTO registros (aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes]
+      "INSERT INTO registros (aluno_id, turma_id, data, alimentacao, comportamento, presenca, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        aluno_id,
+        turma_id,
+        data,
+        alimentacao,
+        comportamento,
+        presenca,
+        observacoes,
+      ]
     );
     conn.release();
-    
-    res.status(201).json({ id: result.insertId, message: 'Registro criado com sucesso' });
+
+    res
+      .status(201)
+      .json({ id: result.insertId, message: "Registro criado com sucesso" });
   } catch (error) {
-    console.error('Erro ao criar registro:', error);
-    res.status(500).json({ error: 'Erro ao criar registro' });
+    console.error("Erro ao criar registro:", error);
+    res.status(500).json({ error: "Erro ao criar registro" });
   }
 });
 
 // Listar registros de um aluno
-app.get('/registros/:alunoId', async (req, res) => {
+app.get("/registros/:alunoId", async (req, res) => {
   const { alunoId } = req.params;
 
   try {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
     const [rows] = await conn.query(
-      'SELECT * FROM registros WHERE aluno_id = ? ORDER BY data DESC',
+      "SELECT * FROM registros WHERE aluno_id = ? ORDER BY data DESC",
       [alunoId]
     );
     conn.release();
-    
+
     res.json(rows);
   } catch (error) {
-    console.error('Erro ao buscar registros:', error);
-    res.status(500).json({ error: 'Erro ao buscar registros' });
+    console.error("Erro ao buscar registros:", error);
+    res.status(500).json({ error: "Erro ao buscar registros" });
   }
 });
 
 // Rota para verificar configuração
-app.get('/api/config', (req, res) => {
+app.get("/api/config", (req, res) => {
   const config = {
     hasDatabaseUrl: !!process.env.DATABASE_URL,
     environment: process.env.NODE_ENV,
     railwayUrl: process.env.RAILWAY_STATIC_URL,
-    port: process.env.PORT
+    port: process.env.PORT,
   };
   res.json(config);
 });
@@ -511,12 +577,14 @@ app.get('/api/config', (req, res) => {
 // ===== INICIALIZAÇÃO =====
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('🚀 ===== POKECRECHE INICIANDO =====');
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 ===== POKECRECHE INICIANDO =====");
   console.log(`📍 Porta: ${PORT}`);
-  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || "development"}`);
   console.log(`🚇 Platform: Railway`);
-  console.log(`💡 Dica: Adicione um banco MySQL no Railway para funcionar completamente`);
+  console.log(
+    `💡 Dica: Adicione um banco MySQL no Railway para funcionar completamente`
+  );
 });
 
 module.exports = app;
