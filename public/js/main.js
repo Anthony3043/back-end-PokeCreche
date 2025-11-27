@@ -11,7 +11,7 @@ class PokeCrecheApp {
     }
 
     init() {
-        console.log(`🎮 PokeCreche ${this.config.version} inicializado`);
+        console.log(`👶 CrecheApp ${this.config.version} inicializado`);
         console.log(`📍 Ambiente: ${this.config.environment}`);
         console.log(`🌐 Base URL: ${this.config.baseUrl}`);
         
@@ -422,10 +422,10 @@ class PokeCrecheApp {
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-    window.PokeCreche = new PokeCrecheApp();
+    window.CrecheApp = new CrecheApp();
 });
 
 // Export para uso em outros módulos
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PokeCrecheApp;
+    module.exports = CrecheApp;
 }
