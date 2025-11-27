@@ -82,81 +82,109 @@ function getPool() {
   return pool;
 }
 
-// Criar tabelas se não existirem
+// Criar tabelas completas se não existirem
 async function ensureTables() {
-  console.log("🔧 Verificando tabelas...");
+  console.log("🔧 Verificando esquema completo...");
+  
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    // Ler o arquivo SQL completo
+    const schemaPath = path.join(__dirname, 'database_schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    
+    // Dividir em comandos individuais
+    const commands = schema
+      .split(';')
+      .map(cmd => cmd.trim())
+      .filter(cmd => cmd.length > 0 && !cmd.startsWith('--') && !cmd.startsWith('CREATE DATABASE') && !cmd.startsWith('USE'));
+    
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    
+    for (const command of commands) {
+      if (command.trim()) {
+        try {
+          await conn.query(command);
+        } catch (error) {
+          // Ignorar erros de "já existe"
+          if (!error.message.includes('already exists')) {
+            console.log(`⚠️ Erro no comando SQL: ${error.message}`);
+          }
+        }
+      }
+    }
+    
+    conn.release();
+    // Executar atualizações adicionais
+    await executeUpdates(conn);
+    
+    conn.release();
+    console.log("✅ Esquema completo verificado/criado");
+  } catch (error) {
+    console.error("❌ Erro ao criar esquema:", error.message);
+    // Fallback para criação básica
+    await createBasicTables();
+  }
+}
 
-  const createAlunos = `
-    CREATE TABLE IF NOT EXISTS alunos (
+// Executar atualizações adicionais
+async function executeUpdates(conn) {
+  try {
+    const updatePath = path.join(__dirname, 'comunicados_visibilidade_update.sql');
+    if (fs.existsSync(updatePath)) {
+      const updates = fs.readFileSync(updatePath, 'utf8');
+      const updateCommands = updates
+        .split(';')
+        .map(cmd => cmd.trim())
+        .filter(cmd => cmd.length > 0 && !cmd.startsWith('--'));
+      
+      for (const command of updateCommands) {
+        if (command.trim()) {
+          try {
+            await conn.query(command);
+          } catch (error) {
+            if (!error.message.includes('already exists') && !error.message.includes('Duplicate')) {
+              console.log(`⚠️ Erro na atualização: ${error.message}`);
+            }
+          }
+        }
+      }
+      console.log("✅ Atualizações aplicadas");
+    }
+  } catch (error) {
+    console.log("⚠️ Erro ao aplicar atualizações:", error.message);
+  }
+}
+
+// Fallback para criação básica
+async function createBasicTables() {
+  const poolInstance = getPool();
+  const conn = await poolInstance.getConnection();
+  
+  try {
+    await conn.query(`CREATE TABLE IF NOT EXISTS alunos (
       id INT AUTO_INCREMENT PRIMARY KEY,
       nome VARCHAR(255) NOT NULL,
       cpf VARCHAR(20) NOT NULL UNIQUE,
       matricula VARCHAR(50) NOT NULL,
-      avatar TEXT,
+      avatar LONGTEXT,
       turma_id INT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`;
-
-  const createDocentes = `
-    CREATE TABLE IF NOT EXISTS docentes (
+    )`);
+    
+    await conn.query(`CREATE TABLE IF NOT EXISTS docentes (
       id INT AUTO_INCREMENT PRIMARY KEY,
       nome VARCHAR(255) NOT NULL,
       identificador VARCHAR(100) NOT NULL UNIQUE,
       senha VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`;
-
-  const createTurmas = `
-    CREATE TABLE IF NOT EXISTS turmas (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      nome VARCHAR(255) NOT NULL,
-      ano VARCHAR(10) NOT NULL,
-      foto TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )`;
-
-  // Adicionar coluna foto se não existir (para bancos existentes)
-  const addFotoColumn = `
-    ALTER TABLE turmas 
-    ADD COLUMN IF NOT EXISTS foto TEXT,
-    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  `;
-
-  const createRegistros = `
-    CREATE TABLE IF NOT EXISTS registros (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      aluno_id INT NOT NULL,
-      turma_id INT NOT NULL,
-      data DATE NOT NULL,
-      alimentacao VARCHAR(50),
-      comportamento VARCHAR(50),
-      presenca VARCHAR(50),
-      observacoes TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`;
-
-  const poolInstance = getPool();
-  const conn = await poolInstance.getConnection();
-
-  try {
-    await conn.query(createAlunos);
-    await conn.query(createDocentes);
-    await conn.query(createTurmas);
-    await conn.query(createRegistros);
-
-    // Tentar adicionar coluna foto se não existir
-    try {
-      await conn.query(addFotoColumn);
-      console.log("✅ Coluna foto verificada/adicionada");
-    } catch (alterError) {
-      // Ignorar erro se coluna já existir
-      console.log("ℹ️  Coluna foto já existe ou erro na migração");
-    }
-
-    console.log("✅ Tabelas verificadas/criadas");
+    )`);
+    
+    console.log("✅ Tabelas básicas criadas");
   } catch (error) {
-    console.error("❌ Erro nas tabelas:", error.message);
+    console.error("❌ Erro nas tabelas básicas:", error.message);
   } finally {
     conn.release();
   }
