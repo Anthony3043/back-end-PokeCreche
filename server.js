@@ -15,6 +15,9 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.json());
 app.use(cors());
+// Servir arquivos estáticos
+app.use('/css', express.static(path.join(__dirname, 'public/css')));
+app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pokecreche_secret';
