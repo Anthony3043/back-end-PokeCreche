@@ -21,9 +21,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'pokecreche_secret';
 
 // ===== CONFIGURAÇÃO DO BANCO =====
 function getDbConfig() {
-  // Railway fornece DATABASE_URL automaticamente
+  // Produção: usar DATABASE_URL
   if (process.env.DATABASE_URL) {
-    console.log('✅ Usando DATABASE_URL do Railway');
+    console.log('✅ Usando DATABASE_URL');
     const url = new URL(process.env.DATABASE_URL);
     return {
       host: url.hostname,
@@ -33,22 +33,28 @@ function getDbConfig() {
       port: url.port || 3306,
       waitForConnections: true,
       connectionLimit: 10,
-      timezone: '+00:00'
+      timezone: '+00:00',
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     };
   }
 
   // Desenvolvimento local
-  console.log('⚠️  Usando configuração local');
-  return {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'q1w2e3',
-    database: process.env.DB_NAME || 'pokecreche',
-    port: process.env.DB_PORT || 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-    timezone: '+00:00'
-  };
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('⚠️  Usando configuração local');
+    return {
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'q1w2e3',
+      database: process.env.DB_NAME || 'pokecreche',
+      port: process.env.DB_PORT || 3306,
+      waitForConnections: true,
+      connectionLimit: 10,
+      timezone: '+00:00'
+    };
+  }
+
+  // Erro se não tiver configuração
+  throw new Error('DATABASE_URL é obrigatória em produção');
 }
 
 let pool = null;
