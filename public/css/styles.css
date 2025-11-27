@@ -139,7 +139,8 @@ body, html {
     background: var(--background-light);
     position: relative;
     overflow: hidden;
-    min-height: 100vh;
+    min-height: calc(100vh - 80px);
+    padding-bottom: 5rem;
 }
 
 .main-content::before {
