@@ -734,6 +734,16 @@ app.get("/api/config", (req, res) => {
   res.json(config);
 });
 
+// Endpoint para executar esquema manualmente
+app.get("/setup-database", async (req, res) => {
+  try {
+    await ensureTables();
+    res.json({ success: true, message: "Esquema executado com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ===== INICIALIZAÇÃO =====
 const PORT = process.env.PORT || 3000;
 
