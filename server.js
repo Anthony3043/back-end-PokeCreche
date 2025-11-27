@@ -230,9 +230,11 @@ app.get("/api/health", async (req, res) => {
 
 // Cadastro de Aluno
 app.post("/register/aluno", async (req, res) => {
+  console.log('📝 Tentativa de cadastro de aluno:', req.body);
   const { nome, cpf, matricula } = req.body || {};
 
   if (!nome || !cpf || !matricula) {
+    console.log('❌ Campos obrigatórios faltando');
     return res
       .status(400)
       .json({ message: "Campos nome, cpf e matricula são obrigatórios" });
@@ -263,12 +265,13 @@ app.post("/register/aluno", async (req, res) => {
     );
     conn.release();
 
+    console.log('✅ Aluno cadastrado com sucesso! ID:', result.insertId);
     return res.status(201).json({
       message: "🎉 Aluno cadastrado com sucesso!",
       id: result.insertId,
     });
   } catch (error) {
-    console.error("Erro:", error);
+    console.error("🔴 Erro ao cadastrar aluno:", error);
     return res
       .status(500)
       .json({
