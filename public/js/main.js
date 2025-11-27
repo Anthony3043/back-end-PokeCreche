@@ -24,12 +24,7 @@ class CrecheApp {
     setupEventListeners() {
         // Forms específicos serão tratados individualmente
 
-        // Loading states para botões
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-submit')) {
-                this.setButtonLoading(e.target, true);
-            }
-        });
+
 
         // Animações de hover
         document.addEventListener('mouseover', (e) => {

@@ -162,8 +162,14 @@ async function ensureTables() {
 // Página inicial
 app.get("/", async (req, res) => {
   try {
-    await ensureTables();
     const baseUrl = `https://${req.get('host')}`;
+    
+    // Tentar criar tabelas, mas não falhar se der erro
+    try {
+      await ensureTables();
+    } catch (dbError) {
+      console.log('⚠️ Erro ao verificar tabelas, continuando...', dbError.message);
+    }
 
     res.render("pages/alunos", {
       title: "Cadastro do Aluno - CrecheApp",
@@ -171,14 +177,20 @@ app.get("/", async (req, res) => {
       baseUrl: baseUrl,
     });
   } catch (error) {
+    console.error('Erro na página inicial:', error);
     res.status(500).send("Erro ao carregar página");
   }
 });
 
 app.get("/alunos", async (req, res) => {
   try {
-    await ensureTables();
     const baseUrl = `https://${req.get('host')}`;
+    
+    try {
+      await ensureTables();
+    } catch (dbError) {
+      console.log('⚠️ Erro ao verificar tabelas, continuando...', dbError.message);
+    }
 
     res.render("pages/alunos", {
       title: "Cadastro do Aluno - CrecheApp",
@@ -186,14 +198,20 @@ app.get("/alunos", async (req, res) => {
       baseUrl: baseUrl,
     });
   } catch (error) {
+    console.error('Erro na página alunos:', error);
     res.status(500).send("Erro ao carregar página");
   }
 });
 
 app.get("/docentes", async (req, res) => {
   try {
-    await ensureTables();
     const baseUrl = `https://${req.get('host')}`;
+    
+    try {
+      await ensureTables();
+    } catch (dbError) {
+      console.log('⚠️ Erro ao verificar tabelas, continuando...', dbError.message);
+    }
 
     res.render("pages/docentes", {
       title: "Cadastro do Docente - CrecheApp",
@@ -201,6 +219,7 @@ app.get("/docentes", async (req, res) => {
       baseUrl: baseUrl,
     });
   } catch (error) {
+    console.error('Erro na página docentes:', error);
     res.status(500).send("Erro ao carregar página");
   }
 });
