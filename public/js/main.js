@@ -64,10 +64,7 @@ class CrecheApp {
             e.preventDefault();
         });
 
-        // Service Worker (se disponível)
-        if ('serviceWorker' in navigator) {
-            this.registerServiceWorker();
-        }
+        // Service Worker removido para evitar erros 404
     }
 
     async handleFormSubmit(form) {
@@ -368,14 +365,7 @@ class CrecheApp {
         }
     }
 
-    async registerServiceWorker() {
-        try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker registrado:', registration);
-        } catch (error) {
-            console.log('Service Worker não registrado:', error);
-        }
-    }
+
 
     animateHover(element) {
         element.style.transform = 'translateY(-2px) scale(1.05)';
