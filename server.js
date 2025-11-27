@@ -18,7 +18,12 @@ app.use(expressLayouts);
 app.set("layout", "layout");
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:8100', 'http://localhost:4200', 'https://localhost:8100'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 // Servir arquivos estáticos
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
