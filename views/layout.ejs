@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title || 'PokeCreche - Sistema de Cadastro' %></title>
+    <title><%= title || 'CrecheApp - Sistema de Cadastro' %></title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="/css/styles.css" />
@@ -25,8 +25,8 @@
     <header class="site-header">
       <div class="header-container">
         <div class="logo">
-          <span class="logo-icon">🎮</span>
-          <h1>PokeCreche</h1>
+          <span class="logo-icon">👶</span>
+          <h1>CrecheApp</h1>
         </div>
         <nav class="main-nav">
           <ul>
@@ -75,7 +75,7 @@
           <div class="footer-column">
             <h3 class="footer-title">
               <span class="footer-icon">🏫</span>
-              PokeCreche
+              CrecheApp
             </h3>
             <p class="footer-description">
               Sistema de gerenciamento para cadastro de alunos e docentes.
@@ -127,7 +127,7 @@
             <div class="contact-info">
               <p class="contact-item">
                 <span class="contact-icon">📧</span>
-                contato@pokecreche.com
+                contato@crecheapp.com
               </p>
               <p class="contact-item">
                 <span class="contact-icon">📱</span>
@@ -175,7 +175,7 @@
           <div class="footer-divider"></div>
           <div class="bottom-content">
             <div class="copyright">
-              &copy; 2024 <strong>PokeCreche</strong>. Todos os direitos
+              &copy; 2024 <strong>CrecheApp</strong>. Todos os direitos
               reservados.
             </div>
             <div class="footer-links-bottom">
@@ -191,7 +191,7 @@
     <!-- SCRIPTS -->
     <script>
       // Configurações globais passadas do EJS
-      window.PokeCrecheConfig = {
+      window.CrecheAppConfig = {
         baseUrl: '<%= baseUrl || "http://localhost:3000" %>',
         environment: '<%= process.env.NODE_ENV || "development" %>',
         version: "2.0.0",
@@ -203,7 +203,7 @@
       };
 
       console.log(
-        `🚀 PokeCreche ${window.PokeCrecheConfig.version} - ${window.PokeCrecheConfig.environment}`
+        `🚀 CrecheApp ${window.CrecheAppConfig.version} - ${window.CrecheAppConfig.environment}`
       );
     </script>
 

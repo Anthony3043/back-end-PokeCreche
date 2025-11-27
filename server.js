@@ -24,7 +24,7 @@ app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use(express.static(path.join(__dirname, "public")));
 
-const JWT_SECRET = process.env.JWT_SECRET || "pokecreche_secret";
+const JWT_SECRET = process.env.JWT_SECRET || "crecheapp_secret";
 
 // ===== CONFIGURAÇÃO DO BANCO =====
 function getDbConfig() {
@@ -55,7 +55,7 @@ function getDbConfig() {
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
       password: process.env.DB_PASSWORD || "q1w2e3",
-      database: process.env.DB_NAME || "pokecreche",
+      database: process.env.DB_NAME || "crecheapp",
       port: process.env.DB_PORT || 3306,
       waitForConnections: true,
       connectionLimit: 10,
@@ -168,7 +168,7 @@ app.get("/", async (req, res) => {
       `http://localhost:${process.env.PORT || 3000}`;
 
     res.render("pages/alunos", {
-      title: "Cadastro do Aluno - PokeCreche",
+      title: "Cadastro do Aluno - CrecheApp",
       currentPage: "alunos",
       baseUrl: baseUrl,
     });
@@ -185,7 +185,7 @@ app.get("/alunos", async (req, res) => {
       `http://localhost:${process.env.PORT || 3000}`;
 
     res.render("pages/alunos", {
-      title: "Cadastro do Aluno - PokeCreche",
+      title: "Cadastro do Aluno - CrecheApp",
       currentPage: "alunos",
       baseUrl: baseUrl,
     });
@@ -202,7 +202,7 @@ app.get("/docentes", async (req, res) => {
       `http://localhost:${process.env.PORT || 3000}`;
 
     res.render("pages/docentes", {
-      title: "Cadastro do Docente - PokeCreche",
+      title: "Cadastro do Docente - CrecheApp",
       currentPage: "docentes",
       baseUrl: baseUrl,
     });
@@ -221,7 +221,7 @@ app.get("/api/health", async (req, res) => {
 
     res.json({
       status: "healthy",
-      message: "🚀 PokeCreche Online!",
+      message: "🚀 CrecheApp Online!",
       environment: process.env.NODE_ENV || "development",
       platform: "railway",
     });
@@ -578,7 +578,7 @@ app.get("/api/config", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 ===== POKECRECHE INICIANDO =====");
+  console.log("🚀 ===== CRECHEAPP INICIANDO =====");
   console.log(`📍 Porta: ${PORT}`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || "development"}`);
   console.log(`🚇 Platform: Railway`);

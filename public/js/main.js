@@ -1,12 +1,12 @@
 /**
- * PokeCreche - Sistema de Gerenciamento
+ * CrecheApp - Sistema de Gerenciamento
  * Main JavaScript File
  * Versão: 2.0.0
  */
 
-class PokeCrecheApp {
+class CrecheApp {
     constructor() {
-        this.config = window.PokeCrecheConfig || {};
+        this.config = window.CrecheAppConfig || {};
         this.init();
     }
 
