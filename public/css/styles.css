@@ -158,11 +158,11 @@ body, html {
 .content-wrapper {
     position: relative;
     z-index: 1;
-    min-height: calc(100vh - 140px);
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 2rem 2rem 30rem 2rem;
+    padding: 2rem;
+    padding-bottom: 25rem;
 }
 
 /* ===== BALÃO PRINCIPAL ===== */
