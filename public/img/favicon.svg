@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Temporary baby-themed favicon (SVG) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffd6a5"/>
+      <stop offset="1" stop-color="#ffb4a2"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#ffe5d4"/>
+  <g transform="translate(8,8) scale(0.75)">
+    <!-- cabeça -->
+    <circle cx="32" cy="20" r="14" fill="url(#g)" stroke="#f1a899" stroke-width="1"/>
+    <!-- olhos -->
+    <circle cx="26" cy="18" r="2" fill="#3c2500"/>
+    <circle cx="38" cy="18" r="2" fill="#3c2500"/>
+    <!-- sorriso -->
+    <path d="M26 24 q6 6 12 0" stroke="#8a3b2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- franja -->
+    <path d="M20 14 q6 -8 24 0" stroke="#8a3b2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- corpinho simples -->
+    <rect x="20" y="34" width="24" height="14" rx="6" fill="#ffd6a5" stroke="#f1a899" stroke-width="1"/>
+    <text x="32" y="44" text-anchor="middle" font-size="8" fill="#6e3b21" font-family="Comic Neue, Arial, sans-serif">P</text>
+  </g>
+</svg>
