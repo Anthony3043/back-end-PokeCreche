@@ -6,12 +6,16 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const expressLayouts = require('express-ejs-layouts');
 
 const app = express();
 
 // CONFIGURAÇÃO EJS
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Use express-ejs-layouts to automatically wrap page templates with views/layout.ejs
+app.use(expressLayouts);
+app.set('layout', 'layout');
 
 app.use(express.json());
 app.use(cors());
