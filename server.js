@@ -157,6 +157,117 @@ async function ensureTables() {
   }
 }
 
+// ===== ROTAS DE LOGIN =====
+
+// Login de Aluno
+app.post("/login/aluno", async (req, res) => {
+  console.log('📝 Tentativa de login de aluno:', req.body);
+  const { matricula, cpf } = req.body || {};
+
+  if (!matricula || !cpf) {
+    console.log('❌ Campos obrigatórios faltando');
+    return res.status(400).json({ 
+      success: false,
+      message: "Matrícula e CPF são obrigatórios" 
+    });
+  }
+
+  try {
+    const cpfClean = cpf.replace(/\D+/g, "");
+    const matriculaStr = String(matricula).trim();
+
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+
+    const [rows] = await conn.query(
+      "SELECT id, nome, matricula FROM alunos WHERE matricula = ? AND cpf = ? LIMIT 1",
+      [matriculaStr, cpfClean]
+    );
+    conn.release();
+
+    if (rows.length > 0) {
+      const user = rows[0];
+      console.log('✅ Login de aluno bem-sucedido:', user.nome);
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          nome: user.nome,
+          matricula: user.matricula
+        },
+        token: jwt.sign({ id: user.id, type: 'aluno' }, JWT_SECRET, { expiresIn: '24h' })
+      });
+    } else {
+      console.log('❌ Credenciais inválidas para aluno');
+      return res.status(401).json({ 
+        success: false,
+        message: "Credenciais inválidas" 
+      });
+    }
+  } catch (error) {
+    console.error("🔴 Erro no login de aluno:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro interno do servidor"
+    });
+  }
+});
+
+// Login de Docente
+app.post("/login/docente", async (req, res) => {
+  console.log('📝 Tentativa de login de docente:', req.body);
+  const { identificador, senha } = req.body || {};
+
+  if (!identificador || !senha) {
+    console.log('❌ Campos obrigatórios faltando');
+    return res.status(400).json({ 
+      success: false,
+      message: "Identificador e senha são obrigatórios" 
+    });
+  }
+
+  try {
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+
+    const [rows] = await conn.query(
+      "SELECT id, nome, identificador, senha FROM docentes WHERE identificador = ? LIMIT 1",
+      [identificador]
+    );
+    conn.release();
+
+    if (rows.length > 0) {
+      const user = rows[0];
+      const senhaValida = await bcrypt.compare(senha, user.senha);
+      
+      if (senhaValida) {
+        console.log('✅ Login de docente bem-sucedido:', user.nome);
+        return res.json({
+          success: true,
+          user: {
+            id: user.id,
+            nome: user.nome,
+            identificador: user.identificador
+          },
+          token: jwt.sign({ id: user.id, type: 'docente' }, JWT_SECRET, { expiresIn: '24h' })
+        });
+      }
+    }
+    
+    console.log('❌ Credenciais inválidas para docente');
+    return res.status(401).json({ 
+      success: false,
+      message: "Credenciais inválidas" 
+    });
+  } catch (error) {
+    console.error("🔴 Erro no login de docente:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro interno do servidor"
+    });
+  }
+});
+
 // ===== ROTAS PRINCIPAIS =====
 
 // Página inicial
