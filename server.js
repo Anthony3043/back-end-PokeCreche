@@ -163,9 +163,7 @@ async function ensureTables() {
 app.get("/", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl =
-      process.env.RAILWAY_STATIC_URL ||
-      `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = `https://${req.get('host')}`;
 
     res.render("pages/alunos", {
       title: "Cadastro do Aluno - CrecheApp",
@@ -180,9 +178,7 @@ app.get("/", async (req, res) => {
 app.get("/alunos", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl =
-      process.env.RAILWAY_STATIC_URL ||
-      `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = `https://${req.get('host')}`;
 
     res.render("pages/alunos", {
       title: "Cadastro do Aluno - CrecheApp",
@@ -197,9 +193,7 @@ app.get("/alunos", async (req, res) => {
 app.get("/docentes", async (req, res) => {
   try {
     await ensureTables();
-    const baseUrl =
-      process.env.RAILWAY_STATIC_URL ||
-      `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = `https://${req.get('host')}`;
 
     res.render("pages/docentes", {
       title: "Cadastro do Docente - CrecheApp",
