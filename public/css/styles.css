@@ -161,9 +161,8 @@ body, html {
     min-height: calc(100vh - 140px);
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    margin-bottom: 4rem;
+    align-items: flex-start;
+    padding: 2rem 2rem 6rem 2rem;
 }
 
 /* ===== BALÃO PRINCIPAL ===== */
