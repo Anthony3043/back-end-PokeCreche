@@ -29,6 +29,7 @@
     
     document.getElementById('form-aluno').addEventListener('submit', async function (e) {
         e.preventDefault();
+        console.log('🔥 FORMULÁRIO SUBMETIDO!');
         const form = e.target;
         const btn = form.querySelector('.btn-submit');
         const messageDiv = document.getElementById('message-aluno');
