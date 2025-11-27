@@ -1,175 +1,212 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title || 'PokeCreche - Sistema de Cadastro' %></title>
-    
+
     <!-- CSS -->
-    <link rel="stylesheet" href="/css/styles.css">
-    
+    <link rel="stylesheet" href="/css/styles.css" />
+
     <!-- Fontes -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Favicon (SVG primary + ICO fallback) -->
-    <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
-    <link rel="alternate icon" type="image/x-icon" href="/img/favicon.ico">
-</head>
-<body>
+    <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="/img/favicon.ico" />
+  </head>
+  <body>
     <!-- HEADER -->
     <header class="site-header">
-        <div class="header-container">
-            <div class="logo">
-                <span class="logo-icon">🎮</span>
-                <h1>PokeCreche</h1>
-            </div>
-            <nav class="main-nav">
-                <ul>
-                    <li><a href="/alunos" class="nav-link <%= currentPage === 'alunos' ? 'active' : '' %>">Alunos</a></li>
-                    <li><a href="/docentes" class="nav-link <%= currentPage === 'docentes' ? 'active' : '' %>">Docentes</a></li>
-                    <li><a href="/calendario" class="nav-link <%= currentPage === 'calendario' ? 'active' : '' %>">Calendário</a></li>
-                </ul>
-            </nav>
-            <div class="header-info">
-                <span class="env-badge"><%= process.env.NODE_ENV || 'development' %></span>
-            </div>
+      <div class="header-container">
+        <div class="logo">
+          <span class="logo-icon">🎮</span>
+          <h1>PokeCreche</h1>
         </div>
+        <nav class="main-nav">
+          <ul>
+            <li>
+              <a
+                href="/alunos"
+                class="nav-link <%= currentPage === 'alunos' ? 'active' : '' %>"
+                >Alunos</a
+              >
+            </li>
+            <li>
+              <a
+                href="/docentes"
+                class="nav-link <%= currentPage === 'docentes' ? 'active' : '' %>"
+                >Docentes</a
+              >
+            </li>
+            <li>
+              <a
+                href="/calendario"
+                class="nav-link <%= currentPage === 'calendario' ? 'active' : '' %>"
+                >Calendário</a
+              >
+            </li>
+          </ul>
+        </nav>
+        <div class="header-info">
+          <span class="env-badge"
+            ><%= process.env.NODE_ENV || 'development' %></span
+          >
+        </div>
+      </div>
     </header>
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
-        <div class="content-wrapper">
-            <%- body %>
-        </div>
+      <div class="content-wrapper"><%- body %></div>
     </main>
 
     <!-- FOOTER -->
     <footer class="site-footer">
-        <div class="footer-wave"></div>
-        <div class="footer-container">
-            <div class="footer-grid">
-                <!-- Coluna 1: Sobre -->
-                <div class="footer-column">
-                    <h3 class="footer-title">
-                        <span class="footer-icon">🏫</span>
-                        PokeCreche
-                    </h3>
-                    <p class="footer-description">
-                        Sistema de gerenciamento para cadastro de alunos e docentes. 
-                        Interface moderna e intuitiva para uma melhor experiência.
-                    </p>
-                    <div class="social-links">
-                        <a href="#" class="social-link" title="GitHub">
-                            <span class="social-icon">💻</span>
-                        </a>
-                        <a href="#" class="social-link" title="Documentação">
-                            <span class="social-icon">📚</span>
-                        </a>
-                        <a href="#" class="social-link" title="Suporte">
-                            <span class="social-icon">🆘</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Coluna 2: Links Úteis -->
-                <div class="footer-column">
-                    <h3 class="footer-title">
-                        <span class="footer-icon">🔗</span>
-                        Links Rápidos
-                    </h3>
-                    <ul class="footer-links">
-                        <li><a href="/alunos" class="footer-link">📝 Cadastro de Alunos</a></li>
-                        <li><a href="/docentes" class="footer-link">👨‍🏫 Cadastro de Docentes</a></li>
-                        <li><a href="/calendario" class="footer-link">📅 Calendário</a></li>
-                        <li><a href="/api/events" class="footer-link">🔌 API Eventos</a></li>
-                    </ul>
-                </div>
-
-                <!-- Coluna 3: Contato -->
-                <div class="footer-column">
-                    <h3 class="footer-title">
-                        <span class="footer-icon">📞</span>
-                        Contato & Suporte
-                    </h3>
-                    <div class="contact-info">
-                        <p class="contact-item">
-                            <span class="contact-icon">📧</span>
-                            contato@pokecreche.com
-                        </p>
-                        <p class="contact-item">
-                            <span class="contact-icon">📱</span>
-                            (11) 9999-9999
-                        </p>
-                        <p class="contact-item">
-                            <span class="contact-icon">🕒</span>
-                            Seg-Sex: 8h-18h
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Coluna 4: Status do Sistema -->
-                <div class="footer-column">
-                    <h3 class="footer-title">
-                        <span class="footer-icon">📊</span>
-                        Status do Sistema
-                    </h3>
-                    <div class="system-status">
-                        <div class="status-item">
-                            <span class="status-indicator online"></span>
-                            <span>Servidor: Online</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-indicator online"></span>
-                            <span>Database: Conectado</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-indicator online"></span>
-                            <span>API: Funcionando</span>
-                        </div>
-                    </div>
-                    <div class="version-info">
-                        <p>Versão: 2.0.0</p>
-                        <p>Ambiente: <strong><%= process.env.NODE_ENV || 'development' %></strong></p>
-                    </div>
-                </div>
+      <div class="footer-wave"></div>
+      <div class="footer-container">
+        <div class="footer-grid">
+          <!-- Coluna 1: Sobre -->
+          <div class="footer-column">
+            <h3 class="footer-title">
+              <span class="footer-icon">🏫</span>
+              PokeCreche
+            </h3>
+            <p class="footer-description">
+              Sistema de gerenciamento para cadastro de alunos e docentes.
+              Interface moderna e intuitiva para uma melhor experiência.
+            </p>
+            <div class="social-links">
+              <a href="#" class="social-link" title="GitHub">
+                <span class="social-icon">💻</span>
+              </a>
+              <a href="#" class="social-link" title="Documentação">
+                <span class="social-icon">📚</span>
+              </a>
+              <a href="#" class="social-link" title="Suporte">
+                <span class="social-icon">🆘</span>
+              </a>
             </div>
+          </div>
 
-            <!-- Footer Bottom -->
-            <div class="footer-bottom">
-                <div class="footer-divider"></div>
-                <div class="bottom-content">
-                    <div class="copyright">
-                        &copy; 2024 <strong>PokeCreche</strong>. Todos os direitos reservados.
-                    </div>
-                    <div class="footer-links-bottom">
-                        <a href="/privacy" class="bottom-link">Política de Privacidade</a>
-                        <a href="/terms" class="bottom-link">Termos de Uso</a>
-                        <a href="/support" class="bottom-link">Suporte Técnico</a>
-                    </div>
-                </div>
+          <!-- Coluna 2: Links Úteis -->
+          <div class="footer-column">
+            <h3 class="footer-title">
+              <span class="footer-icon">🔗</span>
+              Links Rápidos
+            </h3>
+            <ul class="footer-links">
+              <li>
+                <a href="/alunos" class="footer-link">📝 Cadastro de Alunos</a>
+              </li>
+              <li>
+                <a href="/docentes" class="footer-link"
+                  >👨‍🏫 Cadastro de Docentes</a
+                >
+              </li>
+              <li>
+                <a href="/calendario" class="footer-link">📅 Calendário</a>
+              </li>
+              <li>
+                <a href="/api/events" class="footer-link">🔌 API Eventos</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Coluna 3: Contato -->
+          <div class="footer-column">
+            <h3 class="footer-title">
+              <span class="footer-icon">📞</span>
+              Contato & Suporte
+            </h3>
+            <div class="contact-info">
+              <p class="contact-item">
+                <span class="contact-icon">📧</span>
+                contato@pokecreche.com
+              </p>
+              <p class="contact-item">
+                <span class="contact-icon">📱</span>
+                (11) 9999-9999
+              </p>
+              <p class="contact-item">
+                <span class="contact-icon">🕒</span>
+                Seg-Sex: 8h-18h
+              </p>
             </div>
+          </div>
+
+          <!-- Coluna 4: Status do Sistema -->
+          <div class="footer-column">
+            <h3 class="footer-title">
+              <span class="footer-icon">📊</span>
+              Status do Sistema
+            </h3>
+            <div class="system-status">
+              <div class="status-item">
+                <span class="status-indicator online"></span>
+                <span>Servidor: Online</span>
+              </div>
+              <div class="status-item">
+                <span class="status-indicator online"></span>
+                <span>Database: Conectado</span>
+              </div>
+              <div class="status-item">
+                <span class="status-indicator online"></span>
+                <span>API: Funcionando</span>
+              </div>
+            </div>
+            <div class="version-info">
+              <p>Versão: 2.0.0</p>
+              <p>
+                Ambiente:
+                <strong><%= process.env.NODE_ENV || 'development' %></strong>
+              </p>
+            </div>
+          </div>
         </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-divider"></div>
+          <div class="bottom-content">
+            <div class="copyright">
+              &copy; 2024 <strong>PokeCreche</strong>. Todos os direitos
+              reservados.
+            </div>
+            <div class="footer-links-bottom">
+              <a href="/privacy" class="bottom-link">Política de Privacidade</a>
+              <a href="/terms" class="bottom-link">Termos de Uso</a>
+              <a href="/support" class="bottom-link">Suporte Técnico</a>
+            </div>
+          </div>
+        </div>
+      </div>
     </footer>
 
     <!-- SCRIPTS -->
     <script>
-        // Configurações globais passadas do EJS
-        window.PokeCrecheConfig = {
-            baseUrl: '<%= baseUrl || "http://localhost:3000" %>',
-            environment: '<%= process.env.NODE_ENV || "development" %>',
-            version: '2.0.0',
-            features: {
-                alunos: true,
-                docentes: true,
-                calendario: true
-            }
-        };
-        
-        console.log(`🚀 PokeCreche ${window.PokeCrecheConfig.version} - ${window.PokeCrecheConfig.environment}`);
+      // Configurações globais passadas do EJS
+      window.PokeCrecheConfig = {
+        baseUrl: '<%= baseUrl || "http://localhost:3000" %>',
+        environment: '<%= process.env.NODE_ENV || "development" %>',
+        version: "2.0.0",
+        features: {
+          alunos: true,
+          docentes: true,
+          calendario: true,
+        },
+      };
+
+      console.log(
+        `🚀 PokeCreche ${window.PokeCrecheConfig.version} - ${window.PokeCrecheConfig.environment}`
+      );
     </script>
-    
+
     <script src="/js/main.js"></script>
-</body>
+  </body>
 </html>
