@@ -39,12 +39,12 @@ function getDbConfig() {
       database: url.pathname.substring(1),
       port: url.port || 3306,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,
+      acquireTimeout: 60000,
+      timeout: 60000,
+      reconnect: true,
       timezone: "+00:00",
-      ssl:
-        process.env.NODE_ENV === "production"
-          ? { rejectUnauthorized: false }
-          : false,
+      ssl: { rejectUnauthorized: false },
     };
   }
 
