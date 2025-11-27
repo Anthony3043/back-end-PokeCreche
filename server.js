@@ -737,8 +737,78 @@ app.get("/api/config", (req, res) => {
 // Endpoint para executar esquema manualmente
 app.get("/setup-database", async (req, res) => {
   try {
-    await ensureTables();
-    res.json({ success: true, message: "Esquema executado com sucesso!" });
+    const poolInstance = getPool();
+    const conn = await poolInstance.getConnection();
+    
+    // Criar tabelas uma por uma
+    const tables = [
+      `CREATE TABLE IF NOT EXISTS comunicados (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        docente_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        destinatarios TEXT NOT NULL,
+        cc TEXT,
+        bcc TEXT,
+        icon VARCHAR(10) DEFAULT '📝',
+        tipo ENUM('default', 'urgent', 'info') DEFAULT 'default',
+        data_evento DATE NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS comunicado_destinatarios (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        comunicado_id INT NOT NULL,
+        tipo ENUM('aluno', 'docente', 'geral') NOT NULL,
+        destinatario_id INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS rascunhos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        docente_id INT NOT NULL,
+        title VARCHAR(255),
+        subject VARCHAR(255),
+        message TEXT,
+        destinatarios TEXT,
+        cc TEXT,
+        bcc TEXT,
+        icon VARCHAR(10) DEFAULT '📝',
+        saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS calendario_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        teacher_id INT NULL,
+        date DATE NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        color ENUM('red', 'blue', 'green', 'yellow', 'purple', 'orange') DEFAULT 'blue',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS termos_aceitos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_type ENUM('aluno', 'docente') NOT NULL,
+        user_id INT NOT NULL,
+        aceito BOOLEAN DEFAULT FALSE,
+        data_aceite TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ip_address VARCHAR(45),
+        UNIQUE KEY unique_user_terms (user_type, user_id)
+      )`
+    ];
+    
+    let results = [];
+    for (const table of tables) {
+      try {
+        await conn.query(table);
+        results.push('✅ Tabela criada');
+      } catch (error) {
+        results.push(`❌ ${error.message}`);
+      }
+    }
+    
+    conn.release();
+    res.json({ success: true, results });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
