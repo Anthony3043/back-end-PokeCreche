@@ -388,7 +388,7 @@ body, html {
     background: linear-gradient(135deg, var(--secondary-color) 0%, #34495e 100%);
     color: var(--text-light);
     position: relative;
-    margin-top: auto;
+    margin-top: 5rem;
 }
 
 .footer-wave {
