@@ -1,0 +1,30 @@
+🎯 POKECRECHE - COMECE AQUI!
+
+✅ Configuração concluída com sucesso!
+
+🚀 PRÓXIMOS PASSOS:
+
+1. Abrir terminal nesta pasta
+2. Executar: npm run dev
+3. Acessar: http://localhost:3000
+
+💡 DICAS:
+- Se der erro de MySQL, use: npm run dev:simple
+- Para produção, faça deploy no Railway.app
+- Leia INSTRUCOES.md para detalhes completos
+
+🔑 LOGIN PADRÃO (após npm run init):
+- Usuário: admin
+- Senha: admin123
+
+📚 ARQUIVOS IMPORTANTES:
+- INSTRUCOES.md - Guia completo
+- README.md - Documentação técnica
+- setup.md - Configurações detalhadas
+
+🆘 PROBLEMAS?
+1. Verifique se Node.js está instalado
+2. Execute: npm install
+3. Consulte README.md
+
+🎉 PRONTO PARA USAR!

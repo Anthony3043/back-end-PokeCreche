@@ -9,7 +9,11 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node start-dev.js",
+    "dev:simple": "node server.js",
+    "init": "node init.js",
+    "setup": "npm install && node init.js",
+    "setup:simple": "npm install"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

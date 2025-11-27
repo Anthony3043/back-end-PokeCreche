@@ -51,9 +51,20 @@ function getDbConfig() {
   };
 }
 
-let pool = null;
+// Função para criar conexão única por request (Vercel serverless)
+function createConnection() {
+  const dbConfig = getDbConfig();
+  return mysql.createConnection(dbConfig);
+}
 
+// Manter pool para desenvolvimento local
+let pool = null;
 function getPool() {
+  if (process.env.VERCEL) {
+    // No Vercel, usar conexão única
+    return { getConnection: () => createConnection() };
+  }
+  
   if (!pool) {
     const dbConfig = getDbConfig();
     pool = mysql.createPool(dbConfig);
@@ -137,7 +148,11 @@ async function ensureTables() {
   } catch (error) {
     console.error('❌ Erro nas tabelas:', error.message);
   } finally {
-    conn.release();
+    if (process.env.VERCEL) {
+      await conn.end();
+    } else {
+      conn.release();
+    }
   }
 }
 
@@ -227,22 +242,28 @@ app.post('/register/aluno', async (req, res) => {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
     
-    // Verificar se já existe
-    const [existing] = await conn.query('SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1', [matriculaStr, cpfClean]);
-    
-    if (existing.length > 0) {
-      conn.release();
-      return res.status(409).json({ message: 'Aluno já cadastrado' });
-    }
+    try {
+      // Verificar se já existe
+      const [existing] = await conn.query('SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1', [matriculaStr, cpfClean]);
+      
+      if (existing.length > 0) {
+        return res.status(409).json({ message: 'Aluno já cadastrado' });
+      }
 
-    // Inserir novo aluno
-    const [result] = await conn.query('INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)', [nome, cpfClean, matriculaStr]);
-    conn.release();
-    
-    return res.status(201).json({ 
-      message: '🎉 Aluno cadastrado com sucesso!', 
-      id: result.insertId 
-    });
+      // Inserir novo aluno
+      const [result] = await conn.query('INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)', [nome, cpfClean, matriculaStr]);
+      
+      return res.status(201).json({ 
+        message: '🎉 Aluno cadastrado com sucesso!', 
+        id: result.insertId 
+      });
+    } finally {
+      if (process.env.VERCEL) {
+        await conn.end();
+      } else {
+        conn.release();
+      }
+    }
     
   } catch (error) {
     console.error('Erro:', error);
@@ -264,22 +285,28 @@ app.post('/register/docente', async (req, res) => {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
     
-    // Verificar se já existe
-    const [existing] = await conn.query('SELECT id FROM docentes WHERE identificador = ? LIMIT 1', [identificador]);
-    
-    if (existing.length > 0) {
-      conn.release();
-      return res.status(409).json({ message: 'Docente já cadastrado' });
-    }
+    try {
+      // Verificar se já existe
+      const [existing] = await conn.query('SELECT id FROM docentes WHERE identificador = ? LIMIT 1', [identificador]);
+      
+      if (existing.length > 0) {
+        return res.status(409).json({ message: 'Docente já cadastrado' });
+      }
 
-    // Inserir novo docente
-    const [result] = await conn.query('INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)', [nome, identificador, hashed]);
-    conn.release();
-    
-    return res.status(201).json({ 
-      message: '🎉 Docente cadastrado com sucesso!', 
-      id: result.insertId 
-    });
+      // Inserir novo docente
+      const [result] = await conn.query('INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)', [nome, identificador, hashed]);
+      
+      return res.status(201).json({ 
+        message: '🎉 Docente cadastrado com sucesso!', 
+        id: result.insertId 
+      });
+    } finally {
+      if (process.env.VERCEL) {
+        await conn.end();
+      } else {
+        conn.release();
+      }
+    }
     
   } catch (error) {
     console.error('Erro:', error);
@@ -496,14 +523,15 @@ app.get('/api/config', (req, res) => {
 });
 
 // ===== INICIALIZAÇÃO =====
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('🚀 ===== POKECRECHE INICIANDO =====');
-  console.log(`📍 Porta: ${PORT}`);
-  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🚇 Platform: Railway`);
-  console.log(`💡 Dica: Adicione um banco MySQL no Railway para funcionar completamente`);
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('🚀 ===== POKECRECHE INICIANDO =====');
+    console.log(`📍 Porta: ${PORT}`);
+    console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚇 Platform: ${process.env.VERCEL ? 'Vercel' : 'Local'}`);
+    console.log(`💡 Dica: Configure DATABASE_URL para funcionar completamente`);
+  });
+}
 
 module.exports = app;
