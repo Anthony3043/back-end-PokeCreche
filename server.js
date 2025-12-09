@@ -46,7 +46,6 @@ function getDbConfig() {
       connectionLimit: 5,
       acquireTimeout: 60000,
       timeout: 60000,
-      reconnect: true,
       timezone: "+00:00",
       ssl: { rejectUnauthorized: false },
     };
