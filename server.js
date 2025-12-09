@@ -23,6 +23,12 @@ app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use(express.static(path.join(__dirname, "public")));
 
 const JWT_SECRET = process.env.JWT_SECRET || "crecheapp_secret";
+const initDatabase = require('./init-db');
+
+// Inicializar banco na primeira execução
+if (process.env.DATABASE_URL) {
+  initDatabase().catch(err => console.error('Erro ao inicializar DB:', err));
+}
 
 // CONFIGURAÇÃO DO BANCO
 function getDbConfig() {
