@@ -19,12 +19,11 @@ app.set("layout", "layout");
 
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:8100', 'http://localhost:4200', 'https://localhost:8100'],
+  origin: process.env.CORS_ORIGIN || ['http://localhost:8100', 'http://localhost:4200', 'https://localhost:8100'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-// Servir arquivos estáticos
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use(express.static(path.join(__dirname, "public")));
@@ -72,9 +71,20 @@ function getDbConfig() {
   throw new Error("DATABASE_URL é obrigatória em produção");
 }
 
-let pool = null;
+// Função para criar conexão única por request (Vercel serverless)
+function createConnection() {
+  const dbConfig = getDbConfig();
+  return mysql.createConnection(dbConfig);
+}
 
+// Manter pool para desenvolvimento local
+let pool = null;
 function getPool() {
+  if (process.env.VERCEL) {
+    // No Vercel, usar conexão única
+    return { getConnection: () => createConnection() };
+  }
+  
   if (!pool) {
     const dbConfig = getDbConfig();
     pool = mysql.createPool(dbConfig);
@@ -186,7 +196,11 @@ async function createBasicTables() {
   } catch (error) {
     console.error("❌ Erro nas tabelas básicas:", error.message);
   } finally {
-    conn.release();
+    if (process.env.VERCEL) {
+      await conn.end();
+    } else {
+      conn.release();
+    }
   }
 }
 
@@ -410,29 +424,33 @@ app.post("/register/aluno", async (req, res) => {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
 
-    // Verificar se já existe
-    const [existing] = await conn.query(
-      "SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1",
-      [matriculaStr, cpfClean]
-    );
+    try {
+      const [existing] = await conn.query(
+        "SELECT id FROM alunos WHERE matricula = ? OR cpf = ? LIMIT 1",
+        [matriculaStr, cpfClean]
+      );
 
-    if (existing.length > 0) {
-      conn.release();
-      return res.status(409).json({ message: "Aluno já cadastrado" });
+      if (existing.length > 0) {
+        return res.status(409).json({ message: "Aluno já cadastrado" });
+      }
+
+      const [result] = await conn.query(
+        "INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)",
+        [nome, cpfClean, matriculaStr]
+      );
+
+      console.log('✅ Aluno cadastrado com sucesso! ID:', result.insertId);
+      return res.status(201).json({
+        message: "🎉 Aluno cadastrado com sucesso!",
+        id: result.insertId,
+      });
+    } finally {
+      if (process.env.VERCEL) {
+        await conn.end();
+      } else {
+        conn.release();
+      }
     }
-
-    // Inserir novo aluno
-    const [result] = await conn.query(
-      "INSERT INTO alunos (nome, cpf, matricula) VALUES (?, ?, ?)",
-      [nome, cpfClean, matriculaStr]
-    );
-    conn.release();
-
-    console.log('✅ Aluno cadastrado com sucesso! ID:', result.insertId);
-    return res.status(201).json({
-      message: "🎉 Aluno cadastrado com sucesso!",
-      id: result.insertId,
-    });
   } catch (error) {
     console.error("🔴 Erro ao cadastrar aluno:", error);
     return res
@@ -460,28 +478,32 @@ app.post("/register/docente", async (req, res) => {
     const poolInstance = getPool();
     const conn = await poolInstance.getConnection();
 
-    // Verificar se já existe
-    const [existing] = await conn.query(
-      "SELECT id FROM docentes WHERE identificador = ? LIMIT 1",
-      [identificador]
-    );
+    try {
+      const [existing] = await conn.query(
+        "SELECT id FROM docentes WHERE identificador = ? LIMIT 1",
+        [identificador]
+      );
 
-    if (existing.length > 0) {
-      conn.release();
-      return res.status(409).json({ message: "Docente já cadastrado" });
+      if (existing.length > 0) {
+        return res.status(409).json({ message: "Docente já cadastrado" });
+      }
+
+      const [result] = await conn.query(
+        "INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)",
+        [nome, identificador, hashed]
+      );
+
+      return res.status(201).json({
+        message: "🎉 Docente cadastrado com sucesso!",
+        id: result.insertId,
+      });
+    } finally {
+      if (process.env.VERCEL) {
+        await conn.end();
+      } else {
+        conn.release();
+      }
     }
-
-    // Inserir novo docente
-    const [result] = await conn.query(
-      "INSERT INTO docentes (nome, identificador, senha) VALUES (?, ?, ?)",
-      [nome, identificador, hashed]
-    );
-    conn.release();
-
-    return res.status(201).json({
-      message: "🎉 Docente cadastrado com sucesso!",
-      id: result.insertId,
-    });
   } catch (error) {
     console.error("Erro:", error);
     return res
@@ -815,16 +837,15 @@ app.get("/setup-database", async (req, res) => {
 });
 
 // ===== INICIALIZAÇÃO =====
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 ===== CRECHEAPP INICIANDO =====");
-  console.log(`📍 Porta: ${PORT}`);
-  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🚇 Platform: Railway`);
-  console.log(
-    `💡 Dica: Adicione um banco MySQL no Railway para funcionar completamente`
-  );
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log("🚀 ===== CRECHEAPP INICIANDO =====");
+    console.log(`📍 Porta: ${PORT}`);
+    console.log(`🌍 Ambiente: ${process.env.NODE_ENV || "development"}`);
+    console.log(`🚇 Platform: Railway`);
+    console.log(`💡 Dica: Configure DATABASE_URL para funcionar completamente`);
+  });
+}
 
 module.exports = app;
