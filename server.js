@@ -17,12 +17,25 @@ app.use(expressLayouts);
 app.set("layout", "layout");
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:8100', 'https://crecheapp.vercel.app', 'https://crecheapp1.vercel.app'],
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use(express.static(path.join(__dirname, "public")));
 
 const JWT_SECRET = process.env.JWT_SECRET || "crecheapp_secret";
+
+// Headers CORS adicionais
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 const initDatabase = require('./init-db');
 
 // Inicializar banco na primeira execução
