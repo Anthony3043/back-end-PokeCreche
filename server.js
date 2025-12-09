@@ -44,7 +44,6 @@ function getDbConfig() {
       port: url.port || 3306,
       waitForConnections: true,
       connectionLimit: 5,
-      acquireTimeout: 60000,
       timezone: "+00:00",
       ssl: { rejectUnauthorized: false },
     };
