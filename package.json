@@ -1,7 +1,7 @@
 {
-  "name": "pokecreche-backend",
+  "name": "crecheapp-backend",
   "version": "1.0.0",
-  "description": "Sistema de cadastro PokeCreche",
+  "description": "Sistema de cadastro CrecheApp",
   "main": "server.js",
   "type": "commonjs",
   "engines": {
@@ -9,13 +9,11 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node start-dev.js",
-    "dev:simple": "node server.js",
-    "init": "node init.js",
-    "setup": "npm install && node init.js",
-    "setup:simple": "npm install"
+    "dev": "node server.js",
+    "build": "echo 'Build complete'"
   },
   "dependencies": {
+    "express-ejs-layouts": "^2.5.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

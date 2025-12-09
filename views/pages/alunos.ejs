@@ -29,6 +29,7 @@
     
     document.getElementById('form-aluno').addEventListener('submit', async function (e) {
         e.preventDefault();
+        console.log('🔥 FORMULÁRIO SUBMETIDO!');
         const form = e.target;
         const btn = form.querySelector('.btn-submit');
         const messageDiv = document.getElementById('message-aluno');
@@ -45,7 +46,9 @@
         };
 
         try {
-            const res = await fetch(baseUrl + '/register/aluno', {
+            console.log('Enviando para:', baseUrl + '/register/aluno');
+            console.log('Dados:', data);
+            const res = await fetch('/register/aluno', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)

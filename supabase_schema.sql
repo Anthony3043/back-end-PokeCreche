@@ -1,4 +1,4 @@
--- PokeCreche Database Schema para Supabase (PostgreSQL)
+-- CrecheApp Database Schema para Supabase (PostgreSQL)
 -- Execute este script no SQL Editor do Supabase
 
 -- Tabela de Alunos

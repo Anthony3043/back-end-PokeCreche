@@ -1,17 +1,17 @@
 /**
- * PokeCreche - Sistema de Gerenciamento
+ * CrecheApp - Sistema de Gerenciamento
  * Main JavaScript File
  * Versão: 2.0.0
  */
 
-class PokeCrecheApp {
+class CrecheApp {
     constructor() {
-        this.config = window.PokeCrecheConfig || {};
+        this.config = window.CrecheAppConfig || {};
         this.init();
     }
 
     init() {
-        console.log(`🎮 PokeCreche ${this.config.version} inicializado`);
+        console.log(`👶 CrecheApp ${this.config.version} inicializado`);
         console.log(`📍 Ambiente: ${this.config.environment}`);
         console.log(`🌐 Base URL: ${this.config.baseUrl}`);
         
@@ -22,21 +22,9 @@ class PokeCrecheApp {
     }
 
     setupEventListeners() {
-        // Interceptar todos os forms com classe .ajax-form
-        document.addEventListener('submit', (e) => {
-            const form = e.target;
-            if (form.classList.contains('ajax-form') || form.id.includes('form-')) {
-                e.preventDefault();
-                this.handleFormSubmit(form);
-            }
-        });
+        // Forms específicos serão tratados individualmente
 
-        // Loading states para botões
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-submit')) {
-                this.setButtonLoading(e.target, true);
-            }
-        });
+
 
         // Animações de hover
         document.addEventListener('mouseover', (e) => {
@@ -64,10 +52,7 @@ class PokeCrecheApp {
             e.preventDefault();
         });
 
-        // Service Worker (se disponível)
-        if ('serviceWorker' in navigator) {
-            this.registerServiceWorker();
-        }
+        // Service Worker removido para evitar erros 404
     }
 
     async handleFormSubmit(form) {
@@ -362,23 +347,13 @@ class PokeCrecheApp {
             const response = await fetch(`${this.config.baseUrl}/api/health`);
             if (response.ok) {
                 console.log('✅ Sistema está saudável');
-            } else {
-                console.warn('⚠️ Sistema com problemas');
-                this.showNotification('Sistema com instabilidades', 'warning');
             }
         } catch (error) {
-            console.error('❌ Erro ao verificar status do sistema:', error);
+            console.log('ℹ️ Verificação de status ignorada');
         }
     }
 
-    async registerServiceWorker() {
-        try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker registrado:', registration);
-        } catch (error) {
-            console.log('Service Worker não registrado:', error);
-        }
-    }
+
 
     animateHover(element) {
         element.style.transform = 'translateY(-2px) scale(1.05)';
@@ -422,10 +397,10 @@ class PokeCrecheApp {
 
 // Inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-    window.PokeCreche = new PokeCrecheApp();
+    window.CrecheApp = new CrecheApp();
 });
 
 // Export para uso em outros módulos
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PokeCrecheApp;
+    module.exports = CrecheApp;
 }
