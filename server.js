@@ -123,11 +123,11 @@ async function ensureTables() {
       }
     }
     
-    conn.release();
-    // Executar atualizações adicionais
-    await executeUpdates(conn);
-    
-    conn.release();
+    if (process.env.VERCEL) {
+      await conn.end();
+    } else {
+      conn.release();
+    }
     console.log("✅ Esquema completo verificado/criado");
   } catch (error) {
     console.error("❌ Erro ao criar esquema:", error.message);
@@ -319,12 +319,7 @@ app.get("/", async (req, res) => {
   try {
     const baseUrl = `https://${req.get('host')}`;
     
-    // Tentar criar tabelas, mas não falhar se der erro
-    try {
-      await ensureTables();
-    } catch (dbError) {
-      console.log('⚠️ Erro ao verificar tabelas, continuando...', dbError.message);
-    }
+    // Tabelas já criadas manualmente - não precisa verificar
 
     res.render("pages/alunos", {
       title: "Cadastro do Aluno - CrecheApp",
